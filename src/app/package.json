@@ -1,18 +1,28 @@
 {
-  "name": "server",
-  "version": "1.0.0",
+  "name": "crypto-nodes-rest-api",
+  "version": "0.0.1",
   "description": "",
-  "main": "server.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon ./bin/www",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix ."
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
     "express": "^4.17.2",
-    "pg": "^8.7.1"
+    "pg": "^8.7.1",
+    "helmet": "^3.23.3",
+    "http-errors": "^1.8.0",
+    "morgan": "^1.10.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.15"
+    "nodemon": "^2.0.15",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.2.0",
+    "eslint-config-prettier": "^6.15.0",
+    "eslint-plugin-import": "^2.23.4",
+    "eslint-plugin-prettier": "^3.4.0",
+    "jest": "^24.9.0"
   }
 }
