@@ -17,6 +17,3 @@ module.exports = {
 		return db;
 	} 
 }
-
-// db.connect();
-// module.exports = db;
