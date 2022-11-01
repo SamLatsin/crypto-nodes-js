@@ -100,3 +100,20 @@ services:
       - /usr/src/app//node_modules
     env_file:
       - .env
+
+  bitcoin-core:
+    container_name: bitcoin
+    image: ruimarinho/bitcoin-core:23.0
+    volumes:
+      - ./bitcoin-data:/home/bitcoin/.bitcoin
+    command:
+      -printtoconsole=0
+      -rpcuser=${BTC_RPC_USER} 
+      -rpcpassword=${BTC_RPC_PASSWORD}
+      -server
+      -rpcport=8332
+      -rest
+      -txindex=1
+      -rpcallowip=0.0.0.0/0
+      -regtest=${BTC_TESTNET}
+      -rpcbind=0.0.0.0
