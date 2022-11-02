@@ -7,7 +7,9 @@ const router = express.Router();
 router.post('/api/get/status/btc', async (req, res) => {
   // wallets = await Wallet.getWallets();
   result = await utils.sendRpc("getblockchaininfo", [], "bitcoin:8332/");
-  result = result.result;
+  if (result) {
+    result = result.result;
+  }
   res.send(
     { 
       status: 'done', 
