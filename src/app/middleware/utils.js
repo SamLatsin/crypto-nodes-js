@@ -27,9 +27,11 @@ module.exports = {
 			return res.data; 
 		}
 		catch (error) {
-			// return error.toJSON();
-			return null;
+			return error.toJSON();
+			// return null;
 		}
-		
+	},
+	getNumbers: function(str) {
+		return str.match(/\d+/);
 	}
 };
