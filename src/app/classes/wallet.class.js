@@ -15,10 +15,9 @@ var Wallet = {
 	    return res;
 	},
 	getLastByTicker: async function(ticker) {
-		query = "SELECT * FROM " + model + " WHERE ticker='" + ticker + "' ORDER BY name DESC LIMIT 1";
-		console.log(query);
+		query = "SELECT * FROM " + model + " WHERE ticker=$1 ORDER BY id DESC LIMIT 1";
 		const res = await db
-	    .query(query)
+	    .query(query, [ticker])
 	    .then((payload) => {
 	      return payload.rows;
 	    })
@@ -28,7 +27,29 @@ var Wallet = {
 		return res;
 	},
 	insert: async function(fields) {
-		return "to do";
+		query = "INSERT INTO " + model;
+		keys = [];
+		values = [];
+		data = [];
+		i = 1;
+		for (const [key, value] of Object.entries(fields)) {
+			keys.push('"' + key + '"');
+			values.push('$' + i);
+			data.push(value);
+			i++;
+		}
+		keys = keys.join(", ");
+		values = values.join(", ");
+		query = query + " (" + keys + ") VALUES (" + values + ") RETURNING id";
+		const res = await db
+	    .query(query, data)
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
 	}
 }
 module.exports = Wallet;
