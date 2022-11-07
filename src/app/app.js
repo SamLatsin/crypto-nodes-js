@@ -22,24 +22,20 @@ app.use(function (req, res, next) {
     if (utils.checkToken(req)) { 
         return next();
     }
-    res.status(400).send(
-      {
-        "status": "error",
-        "error": "Bad Request"
-      }
-    );
+    res.status(400).send({
+      "status": "error",
+      "error": "Bad Request"
+    });
 });
 
 app.use('/', btcRouter);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
-  res.status(404).send(
-      {
-        "status": "error",
-        "error": "Not found"
-      }
-    );
+  res.status(404).send({
+    "status": "error",
+    "error": "Not found"
+  });
 });
 
 // pass any unhandled errors to the error handler

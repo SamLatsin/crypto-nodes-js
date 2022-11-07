@@ -1,31 +1,7 @@
 const db = require('../middleware/db').getDb();
-const model = "wallets";
+const model = "btc_transactions";
 
-var Wallet = {
-	getAll: async function() {
-		query = "SELECT * FROM " + model;
-		const res = await db
-	    .query(query)
-	    .then((payload) => {
-	      return payload.rows;
-	    })
-	    .catch(() => {
-	    	return false;
-	    });
-	    return res;
-	},
-	getLastByTicker: async function(ticker) {
-		query = "SELECT * FROM " + model + " WHERE ticker=$1 ORDER BY id DESC LIMIT 1";
-		const res = await db
-	    .query(query, [ticker])
-	    .then((payload) => {
-	      return payload.rows;
-	    })
-	    .catch(() => {
-	    	return false;
-	    });
-		return res;
-	},
+var BtcTransaction = {
 	insert: async function(fields) {
 		query = "INSERT INTO " + model;
 		keys = [];
@@ -51,10 +27,10 @@ var Wallet = {
 	    });
 		return res;
 	},
-	getByTickerAndName: async function(ticker, name) {
-		query = "SELECT * FROM " + model + " WHERE ticker=$1 AND name=$2";
+	getToSync: async function(name) {
+		query = 'SELECT * FROM ' + model + ' WHERE ("fromWallet"=$1 OR "toWallet"=$1) and ("fromChecks"<2 OR "toChecks"<2)';
 		const res = await db
-	    .query(query, [ticker, name])
+	    .query(query, [name])
 	    .then((payload) => {
 	      return payload.rows;
 	    })
@@ -64,4 +40,4 @@ var Wallet = {
 		return res;
 	}
 }
-module.exports = Wallet;
+module.exports = BtcTransaction;

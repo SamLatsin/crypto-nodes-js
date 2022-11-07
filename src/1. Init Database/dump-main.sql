@@ -72,11 +72,49 @@ CREATE TABLE public.btc (
     id integer DEFAULT nextval('public.btc_seq'::regclass) NOT NULL,
     name character varying(64) NOT NULL,
     address character varying(64) NOT NULL,
-    date timestamp with time zone DEFAULT now()
+    date timestamp with time zone DEFAULT now(),
+    balance double precision DEFAULT 0,
+    unconfirmed double precision DEFAULT 0
 );
 
 
 ALTER TABLE public.btc OWNER TO admin;
+
+--
+-- Name: btc_transactions_seq; Type: SEQUENCE; Schema: public; Owner: admin
+--
+
+CREATE SEQUENCE public.btc_transactions_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.btc_transactions_seq OWNER TO admin;
+
+--
+-- Name: btc_transactions; Type: TABLE; Schema: public; Owner: admin
+--
+
+CREATE TABLE public.btc_transactions (
+    id integer DEFAULT nextval('public.btc_transactions_seq'::regclass) NOT NULL,
+    "fromWallet" character varying(64),
+    "toWallet" character varying(64),
+    "fromAddress" character varying(64),
+    "toAddress" character varying(64),
+    amount double precision,
+    fee double precision,
+    checks integer DEFAULT 0 NOT NULL,
+    "fromChecks" integer DEFAULT 0 NOT NULL,
+    "toChecks" integer DEFAULT 0 NOT NULL,
+    txid character varying(64),
+    date timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.btc_transactions OWNER TO admin;
 
 --
 -- Name: eth_seq; Type: SEQUENCE; Schema: public; Owner: admin
@@ -186,7 +224,7 @@ CREATE TABLE public.wallets (
     id integer DEFAULT nextval('public.wallet_seq'::regclass) NOT NULL,
     ticker character varying(10) NOT NULL,
     name character varying(64) NOT NULL,
-    "privateKey" character varying(128) NOT NULL,
+    "privateKey" character varying(256) NOT NULL,
     mnemonic character varying(1024) NOT NULL,
     "walletToken" character varying(128) NOT NULL,
     "lastSync" timestamp with time zone,
@@ -256,7 +294,14 @@ ALTER TABLE public.zcasht OWNER TO admin;
 -- Name: btc_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
 --
 
-SELECT pg_catalog.setval('public.btc_seq', 1, true);
+SELECT pg_catalog.setval('public.btc_seq', 3, true);
+
+
+--
+-- Name: btc_transactions_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
+--
+
+SELECT pg_catalog.setval('public.btc_transactions_seq', 1, false);
 
 
 --
@@ -284,7 +329,7 @@ SELECT pg_catalog.setval('public.trx_seq', 1, false);
 -- Name: wallet_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
 --
 
-SELECT pg_catalog.setval('public.wallet_seq', 1, true);
+SELECT pg_catalog.setval('public.wallet_seq', 34, true);
 
 
 --
