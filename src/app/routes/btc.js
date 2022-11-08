@@ -218,6 +218,16 @@ router.post('/api/get/address_balance/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
+router.post('/api/walletnotify/btc', async (req, res) => {
+  txid = req.body.txid;
+  name = req.body.name;
+  return res.send({ 
+    txid: txid, 
+    name: name
+  });
+
+});
+
 router.post('/api/get/fee/btc', async (req, res) => {
   name = req.body.name;
   token = req.body.walletToken;

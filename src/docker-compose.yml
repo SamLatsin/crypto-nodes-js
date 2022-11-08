@@ -106,6 +106,22 @@ services:
     image: kylemanna/bitcoind:latest
     volumes:
       - ./bitcoin-data:/bitcoin/.bitcoin
+      - type: bind
+        source: ./notify.sh
+        target: /bin/notify.sh
+      - type: bind
+        source: ./healthcheck.sh
+        target: /bin/healthcheck.sh
+    environment:
+      BTC_TOKEN: ${BTC_TOKEN}
+      BTC_RPC_USER: ${BTC_RPC_USER}
+      BTC_RPC_PASSWORD: ${BTC_RPC_PASSWORD}
+    healthcheck:
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+      test: /bin/healthcheck.sh
     command:
       -printtoconsole=0
       -rpcuser=${BTC_RPC_USER} 
@@ -119,30 +135,4 @@ services:
       -rpcbind=0.0.0.0
       -testnet=${BTC_TESTNET}
       -disablewallet=0
-
-  # bitcoin-core:
-  #   container_name: bitcoin
-  #   image: ruimarinho/bitcoin-core:23.0
-    # volumes:
-    #   - ./bitcoin-data:/home/bitcoin/.bitcoin
-  #   ports:
-  #     - "8332:8332"
-    # command:
-    #   -printtoconsole=1
-    #   -rpcuser=${BTC_RPC_USER} 
-    #   -rpcpassword=${BTC_RPC_PASSWORD}
-    #   -server
-    #   -rpcport=8332
-  #     -rest
-  #     -txindex=1
-  #     -rpcallowip=172.17.0.0/16
-  #     -regtest=${BTC_TESTNET}
-  #     -rpcbind=0.0.0.0
-  #     -dbcache=16000
-  #     -rpcworkqueue=1000
-  #   healthcheck:
-  #     test: curl --fail "http://${BTC_RPC_USER}@localhost:8332/rest/chaininfo.json" || exit 1
-  #     interval: 2s
-  #     retries: 100
-  #     start_period: 2s
-  #     timeout: 2s
+      -"walletnotify=/bin/notify.sh %s %w"
