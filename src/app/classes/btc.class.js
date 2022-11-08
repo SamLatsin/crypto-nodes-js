@@ -39,6 +39,18 @@ var Btc = {
 	    });
 		return res;
 	},
+	getByAddress: async function(address) {
+		query = "SELECT * FROM " + model + " WHERE address=$1 ORDER BY id DESC";
+		const res = await db
+	    .query(query, [address])
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
 	getByNameAndAddress: async function(name, address) {
 		query = "SELECT * FROM " + model + " WHERE name=$1 AND address=$2 ORDER BY id DESC";
 		const res = await db
