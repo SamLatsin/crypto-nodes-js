@@ -72,6 +72,18 @@ var BtcTransaction = {
 	    	return false;
 	    });
 		return res;
-	}
+	},
+	getByName: async function(name) {
+		query = 'SELECT * FROM ' + model + ' WHERE "fromWallet"=$1 OR "toWallet"=$1';
+		const res = await db
+	    .query(query, [name])
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
 }
 module.exports = BtcTransaction;

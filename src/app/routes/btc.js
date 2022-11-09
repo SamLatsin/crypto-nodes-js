@@ -221,11 +221,6 @@ router.post('/api/get/address_balance/btc', async (req, res) => {
 router.post('/api/walletnotify/btc', async (req, res) => {
   txid = req.body.txid;
   name = req.body.name;
-  transaction_row = await BtcTransaction.getByTxid(txid);
-  upd = false;
-  if (transaction_row && transaction_row.length !== 0) {
-    upd = true;
-  }
   debug1 = await utils.sendRpc("getrawtransaction", [txid], "bitcoin:8332/");
   if (!debug1.result) {
     return res.send({
@@ -267,6 +262,11 @@ router.post('/api/walletnotify/btc', async (req, res) => {
     }
   }
   fee = parseFloat(parseFloat(plus) - parseFloat(minus)).toFixed(8);
+  transaction_row = await BtcTransaction.getByTxid(txid);
+  upd = false;
+  if (transaction_row && transaction_row.length !== 0) {
+    upd = true;
+  }
   if (upd) {
     fields = {
       fee: fee,
@@ -308,6 +308,29 @@ router.post('/api/walletnotify/btc', async (req, res) => {
     plus: plus,
     minus: minus 
   });
+});
+
+router.post('/api/get/history/btc', async (req, res) => {
+  name = req.body.name;
+  token = req.body.walletToken;
+  wallet = await Wallet.getByTickerAndName('btc', name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != token) {
+      return utils.badToken(res);
+    }
+    if (await isRecovering(wallet.name)) {
+      return res.send({
+        status: "recovering"
+      });
+    }
+    transactions = await BtcTransaction.getByName(name);
+    return res.send({ 
+      status: 'done', 
+      result: transactions
+    });
+  }
+  return utils.badRequest(res);
 });
 
 router.post('/api/get/fee/btc', async (req, res) => {
