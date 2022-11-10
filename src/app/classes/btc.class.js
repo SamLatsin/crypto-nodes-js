@@ -27,6 +27,28 @@ var Btc = {
 	    });
 		return res;
 	},
+	update: async function(fields, id) {
+		query = "UPDATE " + model + " SET ";
+		data = [];
+		i = 1;
+		values = []
+		for (const [key, value] of Object.entries(fields)) {
+			values.push('"' + key + '"' + "=$" + i);
+			data.push(value);
+			i++;
+		}
+		values = values.join(", ");
+		query = query + values + " WHERE id=" + id;
+		const res = await db
+	    .query(query, data)
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
 	getByName: async function(name) {
 		query = "SELECT * FROM " + model + " WHERE name=$1 ORDER BY id DESC";
 		const res = await db

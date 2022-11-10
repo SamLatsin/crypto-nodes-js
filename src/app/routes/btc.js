@@ -30,16 +30,84 @@ async function isRecovering(name) {
   return true;
 }
 
+async function getConfirmations(txid) {
+  if (!txid || txid.length == 0) {
+    return 1;
+  }
+  raw_transaction = await utils.sendRpc("getrawtransaction", [txid, 1], "bitcoin:8332/");
+  if ("confirmations" in raw_transaction.result) {
+    confirmations = raw_transaction.result.confirmations;
+  }
+  else {
+    confirmations = 0;
+  }
+  return confirmations;
+}
+
 async function updateBalance(name) {
+  if (!name || name.length == 0) {
+    return;
+  }
   transactions = await BtcTransaction.getToSync(name);
   addresses = await Btc.getByName(name);
   for (const [key, transaction] of Object.entries(transactions)) {
     fee = transaction.fee;
-    console.log(fee);
+    key1 = addresses.findIndex(address => address.address === transaction.fromAddress);
+    if (key1 !== -1) {
+      if (name == transaction.fromWallet) {
+        if (transaction.fromWallet == transaction.toWallet) {
+          transactions[key].toChecks = 2;
+          transactions[key].fromChecks = 2;
+          addresses[key1].balance = (parseFloat(addresses[key1].balance) - parseFloat(transaction.amount) - parseFloat(fee)).toFixed(8);
+          key1 = addresses.findIndex(address => address.address === transaction.toAddress);
+          addresses[key1].balance = (parseFloat(addresses[key1].balance) + parseFloat(transaction.amount)).toFixed(8);
+        }
+        else {
+          if (transaction.fromChecks == 1 && await getConfirmations(transaction.txid) > 0) {
+            transactions[key].fromChecks = 2;
+          }
+          if (transaction.fromChecks == 0) {
+            addresses[key1].balance = (parseFloat(addresses[key1].balance) - parseFloat(transaction.amount) - parseFloat(fee)).toFixed(8);
+            transactions[key].fromChecks = 1;
+          }
+        }
+      }
+    }
+    else {
+      key1 = addresses.findIndex(address => address.address === transaction.toAddress);
+      if (key1 !== -1) {
+        if (name == transaction.toWallet) {
+          if (transaction.toChecks == 1) {
+            if (await getConfirmations(transaction.txid) > 0) {
+              addresses[key1].balance = (parseFloat(addresses[key1].balance) + parseFloat(transaction.amount)).toFixed(8);
+              addresses[key1].unconfirmed = (parseFloat(addresses[key1].unconfirmed) - parseFloat(transaction.amount)).toFixed(8);
+              transactions[key].toChecks = 2;
+            }
+          }
+          if (transaction.toChecks == 0) {
+            if (await getConfirmations(transaction.txid) > 0) {
+              addresses[key1].balance = (parseFloat(addresses[key1].balance) + parseFloat(transaction.amount)).toFixed(8);
+              transactions[key].toChecks = 2;
+            }
+            else {
+              addresses[key1].unconfirmed = (parseFloat(addresses[key1].unconfirmed) + parseFloat(transaction.amount)).toFixed(8);
+              transactions[key].toChecks = 1;
+            }
+          }
+        }
+      }
+    }
+    if (transaction.fromWallet == null) {
+      transactions[key].fromChecks = transactions[key].toChecks;
+    }
+    if (transaction.toWallet == null) {
+      transactions[key].toChecks = transactions[key].fromChecks;
+    }
+    BtcTransaction.update(transactions[key], transactions[key].id);
   }
-
-
-
+  for (const [key, address] of Object.entries(addresses)) {
+    Btc.update(address, address.id)
+  }
   return true;
 }
 
@@ -61,7 +129,6 @@ router.post('/api/create/wallet/btc', async (req, res) => {
   private_key_hex = code.toHDPrivateKey(null, network).privateKey;
   private_key = new Bitcore.PrivateKey(private_key_hex, network).toWIF();
   wallet = await Wallet.getLastByTicker("btc");
-  console.log(wallet);
   if (wallet && wallet.length !== 0) {
     name = 'w' + (parseInt(utils.getNumbers(wallet[0].name)[0]) + 1);
   }
@@ -350,6 +417,9 @@ router.post('/api/get/fee/btc', async (req, res) => {
         status: "recovering"
       });
     }
+
+  
+
 
     return res.send({ 
       status: 'done', 
