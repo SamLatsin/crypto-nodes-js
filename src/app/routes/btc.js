@@ -584,4 +584,12 @@ router.post('/api/send/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
+router.post('/api/get/confirmations/btc', async (req, res) => {
+  const txid = req.body.txid;
+  return res.send({ 
+    status: 'done', 
+    result: await getConfirmations(txid)
+  });
+});
+
 module.exports = router;
