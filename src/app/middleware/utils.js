@@ -50,5 +50,10 @@ module.exports = {
 	        status: "error",
 	    	error: "Bad token",
 	    });
+	},
+	sleep: function sleep(ms) {
+		return new Promise((resolve) => {
+			setTimeout(resolve, ms);
+		});
 	}
 };

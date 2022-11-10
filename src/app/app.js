@@ -4,7 +4,7 @@ const logger = require('morgan');
 const helmet = require('helmet');
 const utils = require('./middleware/utils');
 
-var db = require('./middleware/db');
+let db = require('./middleware/db');
 db.connectToDb();
 
 const btcRouter = require('./routes/btc');

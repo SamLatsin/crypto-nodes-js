@@ -1,13 +1,13 @@
 const db = require('../middleware/db').getDb();
 const model = "btc_transactions";
 
-var BtcTransaction = {
+let BtcTransaction = {
 	insert: async function(fields) {
-		query = "INSERT INTO " + model;
-		keys = [];
-		values = [];
-		data = [];
-		i = 1;
+		let query = "INSERT INTO " + model;
+		let keys = [];
+		let values = [];
+		let data = [];
+		let i = 1;
 		for (const [key, value] of Object.entries(fields)) {
 			keys.push('"' + key + '"');
 			values.push('$' + i);
@@ -28,10 +28,10 @@ var BtcTransaction = {
 		return res;
 	},
 	update: async function(fields, id) {
-		query = "UPDATE " + model + " SET ";
-		data = [];
-		i = 1;
-		values = []
+		let query = "UPDATE " + model + " SET ";
+		let data = [];
+		let i = 1;
+		let values = []
 		for (const [key, value] of Object.entries(fields)) {
 			values.push('"' + key + '"' + "=$" + i);
 			data.push(value);
@@ -50,7 +50,7 @@ var BtcTransaction = {
 		return res;
 	},
 	getToSync: async function(name) {
-		query = 'SELECT * FROM ' + model + ' WHERE ("fromWallet"=$1 OR "toWallet"=$1) and ("fromChecks"<2 OR "toChecks"<2)';
+		let query = 'SELECT * FROM ' + model + ' WHERE ("fromWallet"=$1 OR "toWallet"=$1) and ("fromChecks"<2 OR "toChecks"<2)';
 		const res = await db
 	    .query(query, [name])
 	    .then((payload) => {
@@ -62,7 +62,7 @@ var BtcTransaction = {
 		return res;
 	},
 	getByTxid: async function(txid) {
-		query = 'SELECT * FROM ' + model + ' WHERE txid=$1';
+		let query = 'SELECT * FROM ' + model + ' WHERE txid=$1';
 		const res = await db
 	    .query(query, [txid])
 	    .then((payload) => {
@@ -74,7 +74,7 @@ var BtcTransaction = {
 		return res;
 	},
 	getByName: async function(name) {
-		query = 'SELECT * FROM ' + model + ' WHERE "fromWallet"=$1 OR "toWallet"=$1';
+		let query = 'SELECT * FROM ' + model + ' WHERE "fromWallet"=$1 OR "toWallet"=$1';
 		const res = await db
 	    .query(query, [name])
 	    .then((payload) => {

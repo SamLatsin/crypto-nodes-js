@@ -1,13 +1,13 @@
 const db = require('../middleware/db').getDb();
 const model = "btc";
 
-var Btc = {
+let Btc = {
 	insert: async function(fields) {
-		query = "INSERT INTO " + model;
-		keys = [];
-		values = [];
-		data = [];
-		i = 1;
+		let query = "INSERT INTO " + model;
+		let keys = [];
+		let values = [];
+		let data = [];
+		let i = 1;
 		for (const [key, value] of Object.entries(fields)) {
 			keys.push('"' + key + '"');
 			values.push('$' + i);
@@ -28,10 +28,10 @@ var Btc = {
 		return res;
 	},
 	update: async function(fields, id) {
-		query = "UPDATE " + model + " SET ";
-		data = [];
-		i = 1;
-		values = []
+		let query = "UPDATE " + model + " SET ";
+		let data = [];
+		let i = 1;
+		let values = []
 		for (const [key, value] of Object.entries(fields)) {
 			values.push('"' + key + '"' + "=$" + i);
 			data.push(value);
@@ -50,7 +50,7 @@ var Btc = {
 		return res;
 	},
 	getByName: async function(name) {
-		query = "SELECT * FROM " + model + " WHERE name=$1 ORDER BY id DESC";
+		let query = "SELECT * FROM " + model + " WHERE name=$1 ORDER BY id DESC";
 		const res = await db
 	    .query(query, [name])
 	    .then((payload) => {
@@ -62,7 +62,7 @@ var Btc = {
 		return res;
 	},
 	getByAddress: async function(address) {
-		query = "SELECT * FROM " + model + " WHERE address=$1 ORDER BY id DESC";
+		let query = "SELECT * FROM " + model + " WHERE address=$1 ORDER BY id DESC";
 		const res = await db
 	    .query(query, [address])
 	    .then((payload) => {
@@ -74,7 +74,7 @@ var Btc = {
 		return res;
 	},
 	getByNameAndAddress: async function(name, address) {
-		query = "SELECT * FROM " + model + " WHERE name=$1 AND address=$2 ORDER BY id DESC";
+		let query = "SELECT * FROM " + model + " WHERE name=$1 AND address=$2 ORDER BY id DESC";
 		const res = await db
 	    .query(query, [name, address])
 	    .then((payload) => {

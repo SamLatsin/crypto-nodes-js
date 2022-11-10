@@ -1,9 +1,9 @@
 const db = require('../middleware/db').getDb();
 const model = "wallets";
 
-var Wallet = {
+let Wallet = {
 	getAll: async function() {
-		query = "SELECT * FROM " + model;
+		let query = "SELECT * FROM " + model;
 		const res = await db
 	    .query(query)
 	    .then((payload) => {
@@ -15,7 +15,7 @@ var Wallet = {
 	    return res;
 	},
 	getLastByTicker: async function(ticker) {
-		query = "SELECT * FROM " + model + " WHERE ticker=$1 ORDER BY id DESC LIMIT 1";
+		let query = "SELECT * FROM " + model + " WHERE ticker=$1 ORDER BY id DESC LIMIT 1";
 		const res = await db
 	    .query(query, [ticker])
 	    .then((payload) => {
@@ -27,11 +27,11 @@ var Wallet = {
 		return res;
 	},
 	insert: async function(fields) {
-		query = "INSERT INTO " + model;
-		keys = [];
-		values = [];
-		data = [];
-		i = 1;
+		let query = "INSERT INTO " + model;
+		let keys = [];
+		let values = [];
+		let data = [];
+		let i = 1;
 		for (const [key, value] of Object.entries(fields)) {
 			keys.push('"' + key + '"');
 			values.push('$' + i);
@@ -52,7 +52,7 @@ var Wallet = {
 		return res;
 	},
 	getByTickerAndName: async function(ticker, name) {
-		query = "SELECT * FROM " + model + " WHERE ticker=$1 AND name=$2";
+		let query = "SELECT * FROM " + model + " WHERE ticker=$1 AND name=$2";
 		const res = await db
 	    .query(query, [ticker, name])
 	    .then((payload) => {
