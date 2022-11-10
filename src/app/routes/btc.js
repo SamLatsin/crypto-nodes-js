@@ -103,10 +103,10 @@ async function updateBalance(name) {
     if (transaction.toWallet == null) {
       transactions[key].toChecks = transactions[key].fromChecks;
     }
-    BtcTransaction.update(transactions[key], transactions[key].id);
+    await BtcTransaction.update(transactions[key], transactions[key].id);
   }
   for (const [key, address] of Object.entries(addresses)) {
-    Btc.update(address, address.id)
+    await Btc.update(address, address.id)
   }
   return true;
 }
@@ -277,7 +277,7 @@ router.post('/api/get/address_balance/btc', async (req, res) => {
         }
       });
     }
-    return res.send({ 
+    return res.status(400).send({ 
       status: 'error', 
       error: 'No address on this wallet'
     });
@@ -290,7 +290,7 @@ router.post('/api/walletnotify/btc', async (req, res) => {
   name = req.body.name;
   debug1 = await utils.sendRpc("getrawtransaction", [txid], "bitcoin:8332/");
   if (!debug1.result) {
-    return res.send({
+    return res.status(400).send({
         status: "error",
         error: debug1.result.message
     });
@@ -406,6 +406,7 @@ router.post('/api/get/fee/btc', async (req, res) => {
   from_address = req.body.from_address;
   to_address = req.body.to_address;
   fee = req.body.fee;
+  amount = req.body.amount;
   wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
@@ -417,13 +418,55 @@ router.post('/api/get/fee/btc', async (req, res) => {
         status: "recovering"
       });
     }
-
-  
-
-
+    from_virtual = await Btc.getByNameAndAddress(name, from_address);
+    if (!from_virtual || from_virtual.length == 0) {
+      return res.status(400).send({ 
+        status: 'error', 
+        result: 'Non-existent address on this wallet'
+      });
+    }
+    to_virtual = await Btc.getByNameAndAddress(name, to_address);
+    if (to_virtual && to_virtual.length > 0) {
+      if (from_virtual[0].name == to_virtual[0].name) {
+        if (parseFloat(from_virtual[0].balance) > parseFloat(amount)) {
+          return res.send({ 
+            status: 'done', 
+            result: 0
+          });
+        }
+        return res.status(400).send({ 
+          status: 'error', 
+          result: 'Insufficient funds'
+        });
+      }
+    }
+    load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
+    amount = parseFloat(amount).toFixed(8);
+    args = [
+      [],
+      [
+        {
+          [to_address]: amount
+        }
+      ]
+    ];
+    hex = await utils.sendRpc("createrawtransaction", args, "bitcoin:8332/");
+    if (fee && fee.length > 0) {
+      fee = parseFloat(fee) / 1e5; // convert from BTC/kB to satoshis/byte
+      result = await utils.sendRpc("fundrawtransaction", [hex.result, {feeRate: fee}], "bitcoin:8332/wallet/" + name);
+    }
+    else {
+      result = await utils.sendRpc("fundrawtransaction", [hex.result], "bitcoin:8332/wallet/" + name);
+    }
+    if (result.error !== null) {
+      return res.status(400).send({
+          status: "error",
+          error: result.error.message
+      });
+    }
     return res.send({ 
       status: 'done', 
-      result: fee
+      result: result.result.fee
     });
   }
   return utils.badRequest(res);
