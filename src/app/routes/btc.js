@@ -592,4 +592,19 @@ router.post('/api/get/confirmations/btc', async (req, res) => {
   });
 });
 
+router.post('/api/walelt/get/transaction/btc', async (req, res) => {
+  const txid = req.body.txid;
+  const result = await utils.sendRpc("getrawtransaction", [txid, 1], "bitcoin:8332/");
+  if (result.error !== null) {
+    return res.status(400).send({
+        status: "error",
+        error: result.error.message
+    });
+  }
+  return res.send({ 
+    status: 'done', 
+    result: result.result
+  });
+});
+
 module.exports = router;
