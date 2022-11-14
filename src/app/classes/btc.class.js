@@ -59,12 +59,12 @@ let Btc = {
 	    });
 		return res;
 	},
-	delete: async function(name) {
-		let query = "DELETE * FROM " + model + " WHERE name=$1";
+	delete: async function(id) {
+		let query = "DELETE FROM " + model + " WHERE id=$1";
 		query = {
-			name: "delete btc " + name,
+			name: "delete btc " + id,
 			text: query,
-			values: [name]
+			values: [id]
 		};
 		const res = await db
 	    .query(query)

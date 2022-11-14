@@ -31,6 +31,23 @@ module.exports = {
 			return error.response.data;
 		}
 	},
+	sendLocal: async function(uri) {
+		let options = {
+		    url: "http://localhost:5656" + uri,
+		    headers:
+		    { 
+		     "content-type": "application/x-www-form-urlencoded"
+		    },
+		    body: null
+		};
+		try {
+			const res = await axios.post(options.url, options.body, options.headers);
+			return res.data; 
+		}
+		catch (error) {
+			return error;
+		}
+	},
 	getNumbers: function(str) {
 		return str.match(/\d+/);
 	},

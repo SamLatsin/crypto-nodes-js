@@ -59,12 +59,12 @@ let Btc = {
 	    });
 		return res;
 	},
-	delete: async function(name) {
-		let query = "DELETE * FROM " + model + " WHERE name=$1";
+	delete: async function(id) {
+		let query = "DELETE FROM " + model + " WHERE id=$1";
 		query = {
-			name: "delete recover " + name,
+			name: "delete recover " + id,
 			text: query,
-			values: [name]
+			values: [id]
 		};
 		const res = await db
 	    .query(query)
@@ -76,10 +76,22 @@ let Btc = {
 	    });
 		return res;
 	},
-	getByName: async function(name) {
-		let query = "SELECT * FROM " + model + " WHERE name=$1 ORDER BY id DESC";
+	getAll: async function() {
+		let query = "SELECT * FROM " + model + " ORDER BY id ASC";
 		const res = await db
-	    .query(query, [name])
+	    .query(query)
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
+	getByTickerAndName: async function(ticker, name) {
+		let query = "SELECT * FROM " + model + " WHERE ticker=$1 AND name=$2 ORDER BY id DESC";
+		const res = await db
+	    .query(query, [ticker, name])
 	    .then((payload) => {
 	      return payload.rows;
 	    })

@@ -2,6 +2,7 @@ const express = require('express');
 const utils = require('../middleware/utils');
 const Wallet = require('../classes/wallet.class');
 const Btc = require('../classes/btc.class');
+const RecoverQueue = require('../classes/recover_queue.class');
 const BtcTransaction = require('../classes/btc_transaction.class');
 const Mnemonic = require('bitcore-mnemonic');
 const Bitcore = require('bitcore-lib');
@@ -18,6 +19,9 @@ else {
 async function isRecovering(name) {
   let debug1 = await utils.sendRpc("loadwallet", [name], "bitcoin:8332/");
   let result = await utils.sendRpc("getwalletinfo", [], "bitcoin:8332/wallet/" + name);
+  if (result.result == null) { 
+    return true; // maybe need to change this
+  }
   if ("scanning" in result.result) {
     result = result.result.scanning;
   }
@@ -606,6 +610,102 @@ router.post('/api/walelt/get/transaction/btc', async (req, res) => {
     result: result.result
   });
 });
+
+router.post('/api/wallet/recover/btc', async (req, res) => {
+  let start_height = 337122;
+  let mask = "r";
+
+  let mnemonic = req.body.mnemonic;
+  let private_key = req.body.private_key;
+
+  if (!private_key && !mnemonic) {
+    return res.status(400).send({
+        status: "error",
+        error: "No mnemonic or private key"
+    });
+  }
+  if (mnemonic) {
+    let code = new Mnemonic(mnemonic);
+    mnemonic = code.toString();
+    const private_key_hex = code.toHDPrivateKey(null, network).privateKey;
+    private_key = new Bitcore.PrivateKey(private_key_hex, network).toWIF();
+  }
+  else {
+    mnemonic = null;
+  }
+  const wallet = await Wallet.getLastByTicker("btc");
+  if (wallet && wallet.length !== 0) {
+    name = mask + 'w' + (parseInt(utils.getNumbers(wallet[0].name)[0]) + 1);
+  }
+  else {
+    name = mask + 'w1';
+  }
+  const debug = await utils.sendRpc("createwallet", [name, false, true, null, false, false], "bitcoin:8332/");
+  const debug1 = await utils.sendRpc("sethdseed", [true, private_key], "bitcoin:8332/wallet/" + name);
+  const wallet_token = utils.generateUUID();
+  let fields = {
+    ticker: 'btc',
+    name: name,
+    privateKey: private_key,
+    mnemonic: mnemonic,
+    walletToken: wallet_token
+  };
+  await Wallet.insert(fields);
+  fields = {
+    ticker: 'btc',
+    name: name,
+    startHeight: start_height
+  };
+  await RecoverQueue.insert(fields);
+  return res.send({ 
+    status: 'done', 
+    name: name,
+    mnemonic: mnemonic,
+    privateKey: private_key,
+    walletToken: wallet_token
+    // debug: debug,
+    // debug1: debug1,
+  });
+});
+
+router.post('/api/wallet/recover/status/btc', async (req, res) => {
+  const name = req.body.name;
+  const token = req.body.walletToken;
+  let wallet = await Wallet.getByTickerAndName('btc', name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != token) {
+      return utils.badToken(res);
+    }
+    const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
+    let result = await utils.sendRpc("getwalletinfo", [], "bitcoin:8332/wallet/" + wallet.name);
+    if (result.error !== null) {
+      return res.status(400).send({
+          status: "error",
+          error: result.error.message
+      });
+    }
+    if (result.result.scanning == false) {
+      return res.send({ 
+        status: 'done'
+      });
+    }
+    result = result.result.scanning
+    return res.send({ 
+      status: 'syncing',
+      progress: parseFloat(result.progress) * 100,
+      duration: result.duration
+    });
+
+  }
+  return utils.badRequest(res);
+});
+
+// router.post('/api/import/private_keys/btc', async (req, res) => {
+//   return res.send({ 
+//     status: 'done',
+//   });
+// });
 
 // router.post('/api/remove/wallet/btc', async (req, res) => {
 //   const name = req.body.name;

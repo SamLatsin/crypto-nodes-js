@@ -3,11 +3,17 @@ const createError = require('http-errors');
 const logger = require('morgan');
 const helmet = require('helmet');
 const utils = require('./middleware/utils');
+const cron = require('node-cron');
+
+cron.schedule('*/10 * * * *', () => {
+  utils.sendLocal("/api/cron/recover");
+});
 
 let db = require('./middleware/db');
 db.connectToDb();
 
 const btcRouter = require('./routes/btc');
+const cronRouter = require('./routes/cron');
 
 const errorHandler = require('./middleware/errorHandler');
 
@@ -29,6 +35,7 @@ app.use(function (req, res, next) {
 });
 
 app.use('/', btcRouter);
+app.use('/', cronRouter);
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
