@@ -17,8 +17,13 @@ let Btc = {
 		keys = keys.join(", ");
 		values = values.join(", ");
 		query = query + " (" + keys + ") VALUES (" + values + ") RETURNING id";
+		query = {
+			name: "insert btc " + fields.address,
+			text: query,
+			values: data
+		};
 		const res = await db
-	    .query(query, data)
+	    .query(query)
 	    .then((payload) => {
 	      return payload.rows;
 	    })
@@ -39,8 +44,30 @@ let Btc = {
 		}
 		values = values.join(", ");
 		query = query + values + " WHERE id=" + id;
+		query = {
+			name: "update btc " + id,
+			text: query,
+			values: data
+		};
 		const res = await db
-	    .query(query, data)
+	    .query(query)
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
+	delete: async function(name) {
+		let query = "DELETE * FROM " + model + " WHERE name=$1";
+		query = {
+			name: "delete btc " + name,
+			text: query,
+			values: [name]
+		};
+		const res = await db
+	    .query(query)
 	    .then((payload) => {
 	      return payload.rows;
 	    })

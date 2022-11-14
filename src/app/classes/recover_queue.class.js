@@ -1,31 +1,7 @@
 const db = require('../middleware/db').getDb();
-const model = "wallets";
+const model = "recover_queue";
 
-let Wallet = {
-	getAll: async function() {
-		let query = "SELECT * FROM " + model;
-		const res = await db
-	    .query(query)
-	    .then((payload) => {
-	      return payload.rows;
-	    })
-	    .catch(() => {
-	    	return false;
-	    });
-	    return res;
-	},
-	getLastByTicker: async function(ticker) {
-		let query = "SELECT * FROM " + model + " WHERE ticker=$1 ORDER BY id DESC LIMIT 1";
-		const res = await db
-	    .query(query, [ticker])
-	    .then((payload) => {
-	      return payload.rows;
-	    })
-	    .catch(() => {
-	    	return false;
-	    });
-		return res;
-	},
+let Btc = {
 	insert: async function(fields) {
 		let query = "INSERT INTO " + model;
 		let keys = [];
@@ -42,7 +18,34 @@ let Wallet = {
 		values = values.join(", ");
 		query = query + " (" + keys + ") VALUES (" + values + ") RETURNING id";
 		query = {
-			name: "insert wallet " + fields.name,
+			name: "insert recover " + fields.name,
+			text: query,
+			values: data
+		};
+		const res = await db
+	    .query(query)
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
+	update: async function(fields, id) {
+		let query = "UPDATE " + model + " SET ";
+		let data = [];
+		let i = 1;
+		let values = []
+		for (const [key, value] of Object.entries(fields)) {
+			values.push('"' + key + '"' + "=$" + i);
+			data.push(value);
+			i++;
+		}
+		values = values.join(", ");
+		query = query + values + " WHERE id=" + id;
+		query = {
+			name: "update recover " + id,
 			text: query,
 			values: data
 		};
@@ -59,7 +62,7 @@ let Wallet = {
 	delete: async function(name) {
 		let query = "DELETE * FROM " + model + " WHERE name=$1";
 		query = {
-			name: "delete btc " + name,
+			name: "delete recover " + name,
 			text: query,
 			values: [name]
 		};
@@ -73,10 +76,10 @@ let Wallet = {
 	    });
 		return res;
 	},
-	getByTickerAndName: async function(ticker, name) {
-		let query = "SELECT * FROM " + model + " WHERE ticker=$1 AND name=$2";
+	getByName: async function(name) {
+		let query = "SELECT * FROM " + model + " WHERE name=$1 ORDER BY id DESC";
 		const res = await db
-	    .query(query, [ticker, name])
+	    .query(query, [name])
 	    .then((payload) => {
 	      return payload.rows;
 	    })
@@ -86,4 +89,4 @@ let Wallet = {
 		return res;
 	}
 }
-module.exports = Wallet;
+module.exports = Btc;

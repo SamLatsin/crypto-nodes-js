@@ -17,8 +17,13 @@ let BtcTransaction = {
 		keys = keys.join(", ");
 		values = values.join(", ");
 		query = query + " (" + keys + ") VALUES (" + values + ") RETURNING id";
+		query = {
+			name: "insert transaction " + fields.txid + " " + fields.amount,
+			text: query,
+			values: data
+		};
 		const res = await db
-	    .query(query, data)
+	    .query(query)
 	    .then((payload) => {
 	      return payload.rows;
 	    })
@@ -39,8 +44,13 @@ let BtcTransaction = {
 		}
 		values = values.join(", ");
 		query = query + values + " WHERE id=" + id;
+		query = {
+			name: "update transaction " + id,
+			text: query,
+			values: data
+		};
 		const res = await db
-	    .query(query, data)
+	    .query(query)
 	    .then((payload) => {
 	      return payload.rows;
 	    })

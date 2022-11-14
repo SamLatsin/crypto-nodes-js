@@ -607,4 +607,16 @@ router.post('/api/walelt/get/transaction/btc', async (req, res) => {
   });
 });
 
+// router.post('/api/remove/wallet/btc', async (req, res) => {
+//   const name = req.body.name;
+//   const debug = await utils.sendRpc("unloadwallet", [name], "bitcoin:8332/");
+//   await Btc.delete(name);
+//   await Wallet.delete(name);
+//   const fs = require('fs');
+
+//   return res.send({ 
+//     status: 'done', 
+//   });
+// });
+
 module.exports = router;
