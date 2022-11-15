@@ -18,7 +18,7 @@ let Btc = {
 		values = values.join(", ");
 		query = query + " (" + keys + ") VALUES (" + values + ") RETURNING id";
 		query = {
-			name: "insert btc " + fields.address,
+			name: "insert btc " + fields.name + fields.address,
 			text: query,
 			values: data
 		};

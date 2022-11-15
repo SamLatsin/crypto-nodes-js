@@ -56,6 +56,33 @@ let Wallet = {
 	    });
 		return res;
 	},
+	update: async function(fields, id) {
+		let query = "UPDATE " + model + " SET ";
+		let data = [];
+		let i = 1;
+		let values = []
+		for (const [key, value] of Object.entries(fields)) {
+			values.push('"' + key + '"' + "=$" + i);
+			data.push(value);
+			i++;
+		}
+		values = values.join(", ");
+		query = query + values + " WHERE id=" + id;
+		query = {
+			name: "update wallet " + id,
+			text: query,
+			values: data
+		};
+		const res = await db
+	    .query(query)
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
 	delete: async function(id) {
 		let query = "DELETE FROM " + model + " WHERE id=$1";
 		query = {

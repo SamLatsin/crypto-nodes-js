@@ -68,6 +68,10 @@ router.post('/api/cron/recover', async (req, res) => {
   	  }
   	}
   }
+  return res.send({ 
+	status: 'done', 
+	result: "queue is empty"
+  });
 });
 
 module.exports = router;
