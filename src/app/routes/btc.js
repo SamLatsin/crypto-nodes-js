@@ -721,21 +721,33 @@ router.post('/api/wallet/recover/status/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
+router.post('/api/remove/wallet/btc', async (req, res) => {
+  const name = req.body.name;
+  const wallet = await Wallet.getByTickerAndName('btc', name);
+  if (wallet.length > 0) {
+    await Wallet.delete(wallet[0].id);
+  }
+  const debug = await utils.sendRpc("unloadwallet", [name], "bitcoin:8332/");
+  await Btc.deleteByName(name);
+  let dir = "";
+  if (network == "testnet") {
+    dir = "/root/bitcoin-data/testnet3/wallets/";
+  }
+  else {
+    dir = "/root/bitcoin-data/";
+  }
+  const fs = require('fs');
+  fs.rm(dir + name, { recursive: true, force: true }, (error) => {
+    return res.send({ 
+      status: 'done', 
+      error: error
+    });
+  });
+});
+
 // router.post('/api/import/private_keys/btc', async (req, res) => {
 //   return res.send({ 
 //     status: 'done',
-//   });
-// });
-
-// router.post('/api/remove/wallet/btc', async (req, res) => {
-//   const name = req.body.name;
-//   const debug = await utils.sendRpc("unloadwallet", [name], "bitcoin:8332/");
-//   await Btc.delete(name);
-//   await Wallet.delete(name);
-//   const fs = require('fs');
-
-//   return res.send({ 
-//     status: 'done', 
 //   });
 // });
 
