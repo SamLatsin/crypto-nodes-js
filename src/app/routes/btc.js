@@ -48,30 +48,6 @@ async function getConfirmations(txid) {
   return confirmations;
 }
 
-async function recoverAddresses(name) {
-  let wallet = await Wallet.getByTickerAndName('btc', name);
-  wallet = wallet[0];
-  const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
-  const addresses_raw = await utils.sendRpc("listaddressgroupings", [], "bitcoin:8332/wallet/" + wallet.name);
-  for (const [key, address_list] of Object.entries(addresses_raw)) {
-    if (address_list != null) {
-      for (const [key1, address] of Object.entries(address_list[0])) {
-        if (address.length >= 2) {
-          let field = {
-            name: wallet.name,
-            address: address[0],
-            balance: address[1]
-          };
-          let from_db = await Btc.getByNameAndAddress(wallet.name, address[0]);
-          if (from_db.length == 0) {
-            await Btc.insert(field);
-          }
-        }
-      }
-    }
-  }
-}
-
 async function updateBalance(name) {
   if (!name || name.length == 0) {
     return;
@@ -316,16 +292,14 @@ router.post('/api/get/address_balance/btc', async (req, res) => {
 router.post('/api/walletnotify/btc', async (req, res) => {
   const txid = req.body.txid;
   const name = req.body.name;
-
   if (name.startsWith("rw")) {
     let wallet = await Wallet.getByTickerAndName("btc", name);
     wallet = wallet[0];
     if (wallet.recovered == 0) {
-      const fields = {
-        recovered: 1
-      };
-      await Wallet.update(fields, wallet.id);
-      await recoverAddresses(name);
+      return res.status(400).send({ 
+        status: "error",
+        result: "wallet is not fully recovered"
+      });
     }
   }
   // await utils.sleep(2000);
@@ -336,6 +310,7 @@ router.post('/api/walletnotify/btc', async (req, res) => {
         error: debug1.error.message
     });
   }
+  let value = 0;
   let raw_transaction = debug1.result;
   const debug2 = await utils.sendRpc("decoderawtransaction", [raw_transaction], "bitcoin:8332/");
   let transaction = debug2.result;
@@ -346,7 +321,7 @@ router.post('/api/walletnotify/btc', async (req, res) => {
     address = vout.scriptPubKey.address;
     address = await Btc.getByAddress(address);
     if (address && address.length !== 0) {
-      let value = parseFloat(vout.value).toFixed(8);
+      value = parseFloat(vout.value).toFixed(8);
       to_address = address;
     }
   }
@@ -371,7 +346,8 @@ router.post('/api/walletnotify/btc', async (req, res) => {
     }
   }
   let fee = parseFloat(parseFloat(plus) - parseFloat(minus)).toFixed(8);
-  transaction_row = await BtcTransaction.getByTxid(txid);
+  // transaction_row = await BtcTransaction.getByTxid(txid);
+  transaction_row = await BtcTransaction.getByNameAndTxid(name, txid);
   let upd = false;
   if (transaction_row && transaction_row.length !== 0) {
     upd = true;
@@ -745,37 +721,6 @@ router.post('/api/wallet/recover/status/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/test/btc', async (req, res) => {
-  const name = req.body.name;
-  let wallet = await Wallet.getByTickerAndName('btc', name);
-  wallet = wallet[0];
-  const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
-  const addresses_raw = await utils.sendRpc("listaddressgroupings", [], "bitcoin:8332/wallet/" + wallet.name);
-  let fields = [];
-  for (const [key, address_list] of Object.entries(addresses_raw)) {
-    if (address_list != null) {
-      for (const [key1, address] of Object.entries(address_list[0])) {
-        if (address.length >= 2) {
-          let field = {
-            name: wallet.name,
-            address: address[0],
-            balance: address[1]
-          };
-          let from_db = await Btc.getByNameAndAddress(wallet.name, address[0]);
-          if (from_db.length == 0) {
-            fields.push(field);
-            await Btc.insert(field);
-          }
-        }
-      }
-    }
-  }
-  return res.send({ 
-    status: 'done',
-    addresses: fields
-  });
-});
-
 // router.post('/api/import/private_keys/btc', async (req, res) => {
 //   return res.send({ 
 //     status: 'done',
@@ -791,6 +736,12 @@ router.post('/api/test/btc', async (req, res) => {
 
 //   return res.send({ 
 //     status: 'done', 
+//   });
+// });
+
+// router.post('/api/test/btc', async (req, res) => {
+//   return res.send({ 
+//     status: 'done',
 //   });
 // });
 

@@ -31,14 +31,14 @@ module.exports = {
 			return error.response.data;
 		}
 	},
-	sendLocal: async function(uri) {
+	sendLocal: async function(uri, body = null) {
 		let options = {
 		    url: "http://localhost:5656" + uri,
 		    headers:
 		    { 
 		     "content-type": "application/x-www-form-urlencoded"
 		    },
-		    body: null
+		    body: body
 		};
 		try {
 			const res = await axios.post(options.url, options.body, options.headers);

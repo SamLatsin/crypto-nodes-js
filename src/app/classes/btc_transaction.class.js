@@ -18,7 +18,7 @@ let BtcTransaction = {
 		values = values.join(", ");
 		query = query + " (" + keys + ") VALUES (" + values + ") RETURNING id";
 		query = {
-			name: "insert transaction " + fields.txid + " " + fields.amount,
+			name: "insert transaction " + fields.txid.slice(0, 32) + " " + fields.amount,
 			text: query,
 			values: data
 		};
@@ -75,6 +75,18 @@ let BtcTransaction = {
 		let query = 'SELECT * FROM ' + model + ' WHERE txid=$1';
 		const res = await db
 	    .query(query, [txid])
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
+	getByNameAndTxid: async function(name, txid) {
+		let query = 'SELECT * FROM ' + model + ' WHERE ("fromWallet"=$1 OR "toWallet" = $1) AND txid=$2 ';
+		const res = await db
+	    .query(query, [name, txid])
 	    .then((payload) => {
 	      return payload.rows;
 	    })

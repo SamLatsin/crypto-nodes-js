@@ -1,5 +1,8 @@
 const express = require('express');
+const Wallet = require('../classes/wallet.class');
+const Btc = require('../classes/btc.class');
 const RecoverQueue = require('../classes/recover_queue.class');
+const BtcTransaction = require('../classes/btc_transaction.class');
 const utils = require('../middleware/utils');
 const router = express.Router();
 
@@ -21,9 +24,71 @@ async function isRecoveringBTC(name) {
   return true;
 }
 
+async function recoverTransactionsBTC(name) { // not working well
+  const load = await utils.sendRpc("loadwallet", [name], "bitcoin:8332/");
+  const count = 50;
+  let transactions = [];
+  let txids = [];
+  let i = 0;
+  do {
+  	transactions = await utils.sendRpc("listtransactions", ["*", count, i*count], "bitcoin:8332/wallet/" + name);
+  	transactions = transactions.result;
+  	for (const [key, transaction] of Object.entries(transactions)) {
+	  txids.push(transaction.txid);
+	}
+  	i++;
+  } while (transactions.length != 0)
+  for (const [key, txid] of Object.entries(txids)) {
+  	let body = {
+  	  name: name,
+  	  txid: txid,
+  	  token: process.env.BTC_TOKEN
+  	};
+    res = await utils.sendLocal("/api/walletnotify/btc", body);
+    console.log(res);
+  } 
+  return txids;
+}
+
+async function recoverAddressesBTC(name) {
+  let wallet = await Wallet.getByTickerAndName('btc', name);
+  wallet = wallet[0];
+  const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
+  const addresses_raw = await utils.sendRpc("listaddressgroupings", [], "bitcoin:8332/wallet/" + wallet.name);
+  for (const [key, address_list] of Object.entries(addresses_raw)) {
+    if (address_list != null) {
+      for (const [key1, address] of Object.entries(address_list[0])) {
+        if (address.length >= 2) {
+          let field = {
+            name: wallet.name,
+            address: address[0],
+            balance: address[1]
+          };
+          let from_db = await Btc.getByNameAndAddress(wallet.name, address[0]);
+          if (from_db.length == 0) {
+            await Btc.insert(field);
+          }
+        }
+      }
+    }
+  }
+  return;
+}
+
+async function recoverWalletBTC(name) {
+  let wallet = await Wallet.getByTickerAndName("btc", name);
+  wallet = wallet[0];
+  const fields = {
+    recovered: 1
+  };
+  await Wallet.update(fields, wallet.id);
+  await recoverAddressesBTC(name);
+  return;
+}
+
 async function startRecover(ticker, name, start_height) {
   if (ticker == "btc") {
-  	let load = await utils.sendRpc("loadwallet", [name], "bitcoin:8332/");
+    let load = await utils.sendRpc("loadwallet", [name], "bitcoin:8332/");
 	if (parseInt(start_height) == 0) {
 	  let rescan = await utils.sendRpc("rescanblockchain", [], "bitcoin:8332/wallet/" + name);
 	}
@@ -58,6 +123,7 @@ router.post('/api/cron/recover', async (req, res) => {
 		  });
   	  	}
   	  	else {
+  	  	  await recoverWalletBTC(item.name);
           await RecoverQueue.delete(item.id);
           await utils.sendLocal("/api/cron/recover");
           return res.send({ 
