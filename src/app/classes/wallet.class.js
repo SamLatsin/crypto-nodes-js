@@ -123,6 +123,19 @@ let Wallet = {
 	    	return false;
 	    });
 		return res;
+	},
+	getImported: async function(ticker) {
+		let query = "SELECT * FROM " + model + " WHERE ticker=$1 AND name LIKE $2 ORDER BY id ASC";
+		console.log(query);
+		const res = await db
+	    .query(query, [ticker, 'frw%'])
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
 	}
 }
 module.exports = Wallet;

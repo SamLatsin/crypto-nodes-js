@@ -884,11 +884,52 @@ router.post('/api/import/private_keys/btc', upload.single('file'), async (req, r
   });
 });
 
-// router.post('/api/get/file_recovered/stats/btc', async (req, res) => {
-//   return res.send({ 
-//     status: 'done',
-//   });
-// });
+router.post('/api/get/file_recovered/stats/btc', async (req, res) => {
+  let wallets = await Wallet.getImported("btc");
+  let result = [];
+  for (let [key, wallet] of Object.entries(wallets)) {
+    let item = await RecoverQueue.getByTickerAndName("btc", wallet.name);
+    let scan = null;
+    let status = "";
+    let addresses = [];
+
+    if (!item || item.length == 0) {
+      status = "recovered";
+      let addresses_raw = await Btc.getByName(wallet.name);
+      for (const element of addresses_raw) {
+        addresses.push(element.address);
+      }
+    }
+    else {
+      if (item[0].recovering == 1) {
+        status = "recovering";
+      }
+      else {
+        status = "in queue";
+      }
+      scan = await utils.sendRpc("getwalletinfo", [], "bitcoin:8332/wallet/" + wallet.name);
+      scan = scan.result.scanning;
+      if (scan) {
+        scan = {
+          progress: parseFloat(scan.progress) * 100,
+          duration: scan.duration
+        };
+      }
+    }
+    let fields = {
+      name: wallet.name,
+      status: status,
+      recoverStatus: scan,
+      lastSync: wallet.lastSync,
+      addresses: addresses
+    };
+    result.push(fields);
+  }
+  return res.send({ 
+    status: 'done',
+    result: result
+  });
+});
 
 // router.post('/api/test/btc', async (req, res) => {
 //   return res.send({ 

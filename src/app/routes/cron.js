@@ -107,10 +107,10 @@ router.post('/api/cron/recover', async (req, res) => {
   	let item = queue[0];
   	if (item.ticker == "btc") {
   	  if (await isRecoveringBTC(item.name) && item.recovering == 1) {
-  		return res.send({ 
-		  status: 'done', 
-		  result: item.name + " is already recovering"
-		});
+      	return res.send({ 
+    		  status: 'done', 
+    		  result: item.name + " is already recovering"
+    		});
   	  }
   	  else {
   	  	if (item.recovering == 0) {
@@ -120,25 +120,25 @@ router.post('/api/cron/recover', async (req, res) => {
   	  	  await RecoverQueue.update(fields, item.id);
   	  	  startRecover(item.ticker, item.name, item.start_height);
   	  	  return res.send({ 
-			status: 'done', 
-			result: "starting recover " + item.name
-		  });
+      			status: 'done', 
+      			result: "starting recover " + item.name
+      		});
   	  	}
   	  	else {
   	  	  await recoverWalletBTC(item.name);
           await RecoverQueue.delete(item.id);
           await utils.sendLocal("/api/cron/recover");
           return res.send({ 
-			status: 'done', 
-			result: "starting new recover"
-		  });
+      			status: 'done', 
+      			result: "starting new recover"
+      		});
   	  	}
   	  }
   	}
   }
   return res.send({ 
-	status: 'done', 
-	result: "queue is empty"
+	  status: 'done', 
+	  result: "queue is empty"
   });
 });
 
