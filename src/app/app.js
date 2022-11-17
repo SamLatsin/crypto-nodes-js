@@ -14,6 +14,7 @@ db.connectToDb();
 
 const btcRouter = require('./routes/btc');
 const cronRouter = require('./routes/cron');
+const skip_token_check = ["/api/import/private_keys/btc"];
 
 const errorHandler = require('./middleware/errorHandler');
 
@@ -25,13 +26,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(function (req, res, next) {
-    if (utils.checkToken(req)) { 
-        return next();
-    }
-    res.status(400).send({
-      "status": "error",
-      "error": "Bad Request"
-    });
+  if (utils.checkToken(req) || skip_token_check.includes(req.url)) { 
+      return next();
+  }
+  res.status(400).send({
+    "status": "error",
+    "error": "Bad Request"
+  });
 });
 
 app.use('/', btcRouter);

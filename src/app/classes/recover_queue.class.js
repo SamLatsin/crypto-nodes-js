@@ -76,6 +76,23 @@ let Btc = {
 	    });
 		return res;
 	},
+	deleteByTickerAndName: async function(ticker, name) {
+		let query = "DELETE FROM " + model + " WHERE ticker=$1 AND name=$2";
+		query = {
+			name: "delete recover " + name + ticker,
+			text: query,
+			values: [ticker, name]
+		};
+		const res = await db
+	    .query(query)
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
 	getAll: async function() {
 		let query = "SELECT * FROM " + model + " ORDER BY id ASC";
 		const res = await db

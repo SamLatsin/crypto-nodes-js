@@ -111,6 +111,18 @@ let Wallet = {
 	    	return false;
 	    });
 		return res;
+	},
+	getByTickerAndKey: async function(ticker, private_key) {
+		let query = 'SELECT * FROM ' + model + ' WHERE ticker=$1 AND "privateKey"=$2';
+		const res = await db
+	    .query(query, [ticker, private_key])
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
 	}
 }
 module.exports = Wallet;

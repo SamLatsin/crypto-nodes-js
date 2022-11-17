@@ -6,6 +6,9 @@ const RecoverQueue = require('../classes/recover_queue.class');
 const BtcTransaction = require('../classes/btc_transaction.class');
 const Mnemonic = require('bitcore-mnemonic');
 const Bitcore = require('bitcore-lib');
+const multer = require('multer');
+const upload = multer();
+// const upload = multer({ dest: '../uploads/' });
 const router = express.Router();
 
 let network = "";
@@ -632,8 +635,13 @@ router.post('/api/walelt/get/transaction/btc', async (req, res) => {
 });
 
 router.post('/api/wallet/recover/btc', async (req, res) => {
-  let start_height = 337122;
-  let mask = "r";
+  let start_height = 0;
+  let mask = "fr";
+  let frw = req.body.frw;
+  if (!frw) {
+    start_height = 337122;
+    mask = "r";
+  }
 
   let mnemonic = req.body.mnemonic;
   let private_key = req.body.private_key;
@@ -660,7 +668,13 @@ router.post('/api/wallet/recover/btc', async (req, res) => {
   else {
     name = mask + 'w1';
   }
-  const debug = await utils.sendRpc("createwallet", [name, false, true, null, false, false], "bitcoin:8332/");
+  let debug = null;
+  if (mask == "fr") {
+    debug = await utils.sendRpc("createwallet", [name, false, true, null, false, false, true], "bitcoin:8332/");
+  }
+  else {
+    debug = await utils.sendRpc("createwallet", [name, false, true, null, false, false], "bitcoin:8332/");
+  }
   const debug1 = await utils.sendRpc("sethdseed", [true, private_key], "bitcoin:8332/wallet/" + name);
   const wallet_token = utils.generateUUID();
   let fields = {
@@ -716,7 +730,6 @@ router.post('/api/wallet/recover/status/btc', async (req, res) => {
       progress: parseFloat(result.progress) * 100,
       duration: result.duration
     });
-
   }
   return utils.badRequest(res);
 });
@@ -729,6 +742,7 @@ router.post('/api/remove/wallet/btc', async (req, res) => {
   }
   const debug = await utils.sendRpc("unloadwallet", [name], "bitcoin:8332/");
   await Btc.deleteByName(name);
+  await RecoverQueue.deleteByTickerAndName("btc", name);
   let dir = "";
   if (network == "testnet") {
     dir = "/root/bitcoin-data/testnet3/wallets/";
@@ -745,7 +759,176 @@ router.post('/api/remove/wallet/btc', async (req, res) => {
   });
 });
 
-// router.post('/api/import/private_keys/btc', async (req, res) => {
+async function getDuplicate(key) {
+  let mnemonic = null;
+  let private_key = null;
+  if (key.split(" ").length > 3) {
+    mnemonic = key;
+    let code = new Mnemonic(mnemonic);
+    mnemonic = code.toString();
+    const private_key_hex = code.toHDPrivateKey(null, network).privateKey;
+    private_key = new Bitcore.PrivateKey(private_key_hex, network).toWIF();
+  }
+  else {
+    private_key = key;
+  }
+  let duplicate = await Wallet.getByTickerAndKey("btc", private_key);
+  if (duplicate && duplicate.length > 0) {
+    if (duplicate.length == 1) {
+      if (duplicate[0].name[0] == "f") {
+        duplicate = {
+          name: duplicate[0].name,
+          mnemonic: duplicate[0].mnemonic,
+          privateKey: duplicate[0].privateKey
+        };
+        return duplicate;
+      }
+    }
+    else {
+      for (const [key, wallet] of Object.entries(duplicate)) {
+        if (wallet.name[0] == "f") {
+          duplicate = {
+            name: wallet.name,
+            mnemonic: wallet.mnemonic,
+            privateKey: wallet.privateKey
+          };
+          return duplicate;
+        }
+      }
+    }
+  }
+  return {
+    name: null,
+    mnemonic: mnemonic,
+    privateKey: private_key
+  }; 
+}
+
+router.post('/api/import/private_keys/btc', upload.single('file'), async (req, res) => {
+  if (!utils.checkToken(req)) {
+    return res.status(400).send({
+      "status": "error",
+      "error": "Bad Request"
+    });
+  }
+  let list = req.body.list;
+  let file= req.file;
+  let names = [];
+  let duplicates = [];
+  let bads = [];
+  let dup = null;
+
+  if (list) {
+    for (let [key, line] of Object.entries(list)) {
+      line = line.split(" ");
+      if ((line.length <= 1 && line[0].length > 34) || line.length >= 3) {
+        if (line.length > 3) {
+          line = line.join(" ");
+          dup = await getDuplicate(line); // recover wallet from 0 height with "fr" by mnemonic
+          // console.log(line);
+        }
+        else {
+          if (line[0].length > 34) {
+            line = line[0];
+            dup = await getDuplicate(line); // recover wallet from 0 height with "fr" by private_key
+            // console.log(line);
+          }
+          else {
+            bads.push(line.join(" "));
+          }
+        }
+        let recovered_info = null;
+        if (dup.name == null) {
+          let body = {
+            token: process.env.BTC_TOKEN,
+            mnemonic: dup.mnemonic,
+            private_key: dup.privateKey,
+            frw: 1
+          }
+          recovered_info = await utils.sendLocal("/api/wallet/recover/btc", body);
+        }
+        else {
+          duplicates.push(dup);
+        }
+        if (recovered_info != null) {
+          if (("status" in recovered_info) && ("privateKey" in recovered_info)) {
+            if (recovered_info.status == "error") {
+              bads.push(dup);
+            }
+            if (("name" in recovered_info) && recovered_info.status == "done") {
+              names.push(recovered_info.name);
+            }
+          }
+        }
+
+      }
+      else {
+        bads.push(line.join(" "));
+      }
+    }
+  }
+
+  if (file) {
+    const fs = require('fs');
+    let data = file.buffer.toString().split(/(?:\r\n|\r|\n)/g);
+    for (let [key, line] of Object.entries(data)) {
+      line = line.split(" ");
+      if ((line.length <= 1 && line[0].length > 34) || line.length >= 3) {
+        if (line.length > 3) {
+          line = line.join(" ");
+          dup = await getDuplicate(line); // recover wallet from 0 height with "fr" by mnemonic
+          // console.log(line);
+        }
+        else {
+          if (line[0].length > 34) {
+            line = line[0];
+            dup = await getDuplicate(line); // recover wallet from 0 height with "fr" by private_key
+            // console.log(line);
+          }
+          else {
+            bads.push(line.join(" "));
+          }
+        }
+        let recovered_info = null;
+        if (dup.name == null) {
+          let body = {
+            token: process.env.BTC_TOKEN,
+            mnemonic: dup.mnemonic,
+            private_key: dup.privateKey,
+            frw: 1
+          }
+          recovered_info = await utils.sendLocal("/api/wallet/recover/btc", body);
+        }
+        else {
+          duplicates.push(dup);
+        }
+        if (recovered_info != null) {
+          if (("status" in recovered_info) && ("privateKey" in recovered_info)) {
+            if (recovered_info.status == "error") {
+              bads.push(dup);
+            }
+            if (("name" in recovered_info) && recovered_info.status == "done") {
+              names.push(recovered_info.name);
+            }
+          }
+        }
+
+      }
+      else {
+        bads.push(line.join(" "));
+      }
+    }
+  }
+  return res.send({ 
+    status: 'done',
+    message: "private keys imported",
+    bads: bads,
+    duplicates: duplicates,
+    names: names.reverse()
+  });
+});
+
+// router.post('/api/get/file_recovered/stats/btc', async (req, res) => {
 //   return res.send({ 
 //     status: 'done',
 //   });

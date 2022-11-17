@@ -57,16 +57,18 @@ async function recoverAddressesBTC(name) {
   const addresses_raw = await utils.sendRpc("listaddressgroupings", [], "bitcoin:8332/wallet/" + wallet.name);
   for (const [key, address_list] of Object.entries(addresses_raw)) {
     if (address_list != null) {
-      for (const [key1, address] of Object.entries(address_list[0])) {
-        if (address.length >= 2) {
-          let field = {
-            name: wallet.name,
-            address: address[0],
-            balance: address[1]
-          };
-          let from_db = await Btc.getByNameAndAddress(wallet.name, address[0]);
-          if (from_db.length == 0) {
-            await Btc.insert(field);
+      if (address_list[0] != null) {
+        for (const [key1, address] of Object.entries(address_list[0])) {
+          if (address.length >= 2) {
+            let field = {
+              name: wallet.name,
+              address: address[0],
+              balance: address[1]
+            };
+            let from_db = await Btc.getByNameAndAddress(wallet.name, address[0]);
+            if (from_db.length == 0) {
+              await Btc.insert(field);
+            }
           }
         }
       }
