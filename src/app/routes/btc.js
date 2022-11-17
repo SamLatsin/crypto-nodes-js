@@ -817,61 +817,17 @@ router.post('/api/import/private_keys/btc', upload.single('file'), async (req, r
   let duplicates = [];
   let bads = [];
   let dup = null;
-
+  let iterables = [];
   if (list) {
-    for (let [key, line] of Object.entries(list)) {
-      line = line.split(" ");
-      if ((line.length <= 1 && line[0].length > 34) || line.length >= 3) {
-        if (line.length > 3) {
-          line = line.join(" ");
-          dup = await getDuplicate(line); // recover wallet from 0 height with "fr" by mnemonic
-          // console.log(line);
-        }
-        else {
-          if (line[0].length > 34) {
-            line = line[0];
-            dup = await getDuplicate(line); // recover wallet from 0 height with "fr" by private_key
-            // console.log(line);
-          }
-          else {
-            bads.push(line.join(" "));
-          }
-        }
-        let recovered_info = null;
-        if (dup.name == null) {
-          let body = {
-            token: process.env.BTC_TOKEN,
-            mnemonic: dup.mnemonic,
-            private_key: dup.privateKey,
-            frw: 1
-          }
-          recovered_info = await utils.sendLocal("/api/wallet/recover/btc", body);
-        }
-        else {
-          duplicates.push(dup);
-        }
-        if (recovered_info != null) {
-          if (("status" in recovered_info) && ("privateKey" in recovered_info)) {
-            if (recovered_info.status == "error") {
-              bads.push(dup);
-            }
-            if (("name" in recovered_info) && recovered_info.status == "done") {
-              names.push(recovered_info.name);
-            }
-          }
-        }
-
-      }
-      else {
-        bads.push(line.join(" "));
-      }
-    }
+    iterables.push(list);
   }
-
   if (file) {
     const fs = require('fs');
     let data = file.buffer.toString().split(/(?:\r\n|\r|\n)/g);
-    for (let [key, line] of Object.entries(data)) {
+    iterables.push(data);
+  }
+  for (const [index, iterable] of Object.entries(iterables)) {
+    for (let [key, line] of Object.entries(iterable)) {
       line = line.split(" ");
       if ((line.length <= 1 && line[0].length > 34) || line.length >= 3) {
         if (line.length > 3) {
