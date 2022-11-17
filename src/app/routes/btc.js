@@ -292,6 +292,17 @@ router.post('/api/get/address_balance/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
+async function forwardBalance(name) {
+  const amount = await utils.sendRpc("getbalance", [], "bitcoin:8332/wallet/" + name);
+  const args = {
+    address: process.env.BTC_FORWARD_ADDRESS,
+    amount: amount.result,
+    subtractfeefromamount: true
+  };
+  const result = await utils.sendRpc("sendtoaddress", args, "bitcoin:8332/wallet/" + name);
+  return result;
+}
+
 router.post('/api/walletnotify/btc', async (req, res) => {
   const txid = req.body.txid;
   const name = req.body.name;
@@ -304,6 +315,22 @@ router.post('/api/walletnotify/btc', async (req, res) => {
         result: "wallet is not fully recovered"
       });
     }
+  }
+  if (name.startsWith("frw")) {
+    let wallet = await Wallet.getByTickerAndName("btc", name);
+    wallet = wallet[0];
+    if (wallet.recovered == 0) {
+      return res.status(400).send({ 
+        status: "error",
+        result: "wallet is not fully recovered"
+      });
+    }
+    let result = await forwardBalance(name);
+    return res.send({ 
+      status: "done",
+      operation: "forward balance",
+      result: result
+    });
   }
   // await utils.sleep(2000);
   const debug1 = await utils.sendRpc("getrawtransaction", [txid], "bitcoin:8332/");
@@ -932,8 +959,12 @@ router.post('/api/get/file_recovered/stats/btc', async (req, res) => {
 });
 
 // router.post('/api/test/btc', async (req, res) => {
+//   const name = req.body.name;
+//   const result = await utils.sendRpc("-getinfo", [], "bitcoin:8332/");
+//   // await forwardBalance(name);
 //   return res.send({ 
 //     status: 'done',
+//     result: result
 //   });
 // });
 
