@@ -958,6 +958,57 @@ router.post('/api/get/file_recovered/stats/btc', async (req, res) => {
   });
 });
 
+router.post('/api/send_raw/btc', async (req, res) => {
+  const name = req.body.name;
+  const token = req.body.walletToken;
+  let inputs = req.body.inputs;
+  let outputs = req.body.outputs;
+  let fee = req.body.fee;
+  let wallet = await Wallet.getByTickerAndName('btc', name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != token) {
+      return utils.badToken(res);
+    }
+    if (await isRecovering(wallet.name)) {
+      return res.send({
+        status: "recovering"
+      });
+    }
+    inputs = JSON.parse(inputs);
+    outputs = JSON.parse(outputs);
+    const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
+    const listunspent = await utils.sendRpc("listunspent", [], "bitcoin:8332/wallet/" + wallet.name);
+    // const args = [
+    //   [],
+    //   [
+    //     {
+    //       [to_address]: amount
+    //     }
+    //   ]
+    // ];
+    // const hex = await utils.sendRpc("createrawtransaction", args, "bitcoin:8332/");
+    // if (fee && fee.length > 0) {
+    //   fee = parseFloat(fee) / 1e5; // convert from BTC/kB to satoshis/byte
+    //   result = await utils.sendRpc("fundrawtransaction", [hex.result, {feeRate: fee}], "bitcoin:8332/wallet/" + name);
+    // }
+    // else {
+    //   result = await utils.sendRpc("fundrawtransaction", [hex.result], "bitcoin:8332/wallet/" + name);
+    // }
+    // if (result.error !== null) {
+    //   return res.status(400).send({
+    //       status: "error",
+    //       error: result.error.message
+    //   });
+    // }
+    return res.send({ 
+      status: 'done', 
+      result: listunspent
+    });
+  }
+  return utils.badRequest(res);
+});
+
 // router.post('/api/test/btc', async (req, res) => {
 //   const name = req.body.name;
 //   const result = await utils.sendRpc("-getinfo", [], "bitcoin:8332/");
