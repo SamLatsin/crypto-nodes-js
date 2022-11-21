@@ -958,12 +958,16 @@ router.post('/api/get/file_recovered/stats/btc', async (req, res) => {
   });
 });
 
-router.post('/api/send_raw/btc', async (req, res) => {
-  const name = req.body.name;
+// https://stackoverflow.com/questions/38493893/heres-how-to-send-raw-transaction-btc-using-bitcoin-cli-command
+router.post('/api/send_raw/btc', async (req, res) => { 
   const token = req.body.walletToken;
-  let inputs = req.body.inputs;
-  let outputs = req.body.outputs;
+  const name = req.body.name;
+  let inputs_raw = req.body.inputs;
+  let outputs_raw = req.body.outputs;
   let fee = req.body.fee;
+  if (!fee) {
+    fee = 1;
+  }
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
@@ -975,35 +979,86 @@ router.post('/api/send_raw/btc', async (req, res) => {
         status: "recovering"
       });
     }
-    inputs = JSON.parse(inputs);
-    outputs = JSON.parse(outputs);
+    inputs_raw = JSON.parse(inputs_raw);
+    outputs_raw = JSON.parse(outputs_raw);
+    let inputs = [];
     const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
     const listunspent = await utils.sendRpc("listunspent", [], "bitcoin:8332/wallet/" + wallet.name);
-    // const args = [
-    //   [],
-    //   [
-    //     {
-    //       [to_address]: amount
-    //     }
-    //   ]
-    // ];
-    // const hex = await utils.sendRpc("createrawtransaction", args, "bitcoin:8332/");
-    // if (fee && fee.length > 0) {
-    //   fee = parseFloat(fee) / 1e5; // convert from BTC/kB to satoshis/byte
-    //   result = await utils.sendRpc("fundrawtransaction", [hex.result, {feeRate: fee}], "bitcoin:8332/wallet/" + name);
-    // }
-    // else {
-    //   result = await utils.sendRpc("fundrawtransaction", [hex.result], "bitcoin:8332/wallet/" + name);
-    // }
-    // if (result.error !== null) {
-    //   return res.status(400).send({
-    //       status: "error",
-    //       error: result.error.message
-    //   });
-    // }
+    const new_address = await utils.sendRpc("getrawchangeaddress", [], "bitcoin:8332/wallet/" + wallet.name);
+    let max = 0;
+    for (const [key, unspent] of Object.entries(listunspent.result)) {
+      for (const [key, input_raw] of Object.entries(inputs_raw)) {
+        if (input_raw == unspent.address) {
+          if (max == 0) {
+            max = unspent.amount
+          }
+          if (unspent.amount > max) {
+            max = unspent.amount;
+          }
+          inputs.push({
+            txid: unspent.txid,
+            vout: unspent.vout
+          });
+        }
+      }
+    }
+    let args = [inputs, outputs_raw];
+    let raw_transaction = await utils.sendRpc("createrawtransaction", args, "bitcoin:8332/");
+    if (raw_transaction.result == null) {
+      return res.status(400).send({ 
+        status: 'error', 
+        command: 'createrawtransaction',
+        error: raw_transaction.error.message
+      });
+    }
+    let sum = 0;
+    for (const [key, output] of Object.entries(outputs_raw)) {
+      for (const key1 in output) {
+        sum = sum + parseFloat(output[key1]);
+      }
+    }
+    sum = sum.toFixed(8);
+    fee = parseFloat(raw_transaction.result.length * fee / 1e8).toFixed(8);
+    outputs_raw.push({
+      [new_address.result]: (max - parseFloat(fee) - parseFloat(sum)).toFixed(8)
+    });
+    args = [inputs, outputs_raw];
+    raw_transaction = await utils.sendRpc("createrawtransaction", args, "bitcoin:8332/");
+    if (raw_transaction.result == null) {
+      return res.status(400).send({ 
+        status: 'error', 
+        command: 'createrawtransaction',
+        error: raw_transaction.error.message
+      });
+    }
+    const signed_transaction = await utils.sendRpc("signrawtransactionwithwallet", [raw_transaction.result], "bitcoin:8332/wallet/" + wallet.name);
+    if (signed_transaction.result == null) {
+      return res.status(400).send({ 
+        status: 'error', 
+        command: 'signrawtransactionwithwallet',
+        error: signed_transaction.error.message
+      });
+    }
+    const send_raw_transaction = await utils.sendRpc("sendrawtransaction", [signed_transaction.result.hex], "bitcoin:8332/");
+    if (send_raw_transaction.result == null) {
+      return res.status(400).send({ 
+        status: 'error', 
+        command: 'sendrawtransaction',
+        error: send_raw_transaction.error.message
+      });
+    }
+    const result = send_raw_transaction.result;
     return res.send({ 
       status: 'done', 
-      result: listunspent
+      result: result,
+      // listunspent: listunspent,
+      // inputs: inputs,
+      // outputs: outputs_raw,
+      // raw_transaction: raw_transaction,
+      // signed_transaction: signed_transaction,
+      // send_raw_transaction: send_raw_transaction,
+      // new_address: new_address,
+      // fee: fee
     });
   }
   return utils.badRequest(res);
