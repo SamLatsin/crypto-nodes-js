@@ -4,6 +4,7 @@ const Wallet = require('../classes/wallet.class');
 const Btc = require('../classes/btc.class');
 const RecoverQueue = require('../classes/recover_queue.class');
 const BtcTransaction = require('../classes/btc_transaction.class');
+const BtcMatching = require('../classes/btc_matching.class');
 const Mnemonic = require('bitcore-mnemonic');
 const Bitcore = require('bitcore-lib');
 const multer = require('multer');
@@ -581,7 +582,7 @@ router.post('/api/send/btc', async (req, res) => {
         }
         return res.status(400).send({ 
           status: 'error', 
-          result: 'Insufficient funds'
+          result: 'Insufficient virtual funds'
         });
       }
     }
@@ -603,7 +604,7 @@ router.post('/api/send/btc', async (req, res) => {
     if (parseFloat(from_virtual[0].balance) < parseFloat(amount)) {
       return res.status(400).send({ 
         status: 'error', 
-        result: 'Insufficient funds'
+        result: 'Insufficient virtual funds'
       });
     }
     const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
@@ -630,6 +631,20 @@ router.post('/api/send/btc', async (req, res) => {
       txid: result.result
     };
     await BtcTransaction.insert(fields);
+    const raw_transaction = await utils.sendRpc("getrawtransaction", [result.result, 1], "bitcoin:8332/");
+    let change_address = "";
+    if (raw_transaction.result != null) {
+      for (const [key, vout] of Object.entries(raw_transaction.result.vout)) {
+        if (vout.scriptPubKey.address != to_address) {
+          change_address = vout.scriptPubKey.address;
+        }
+      }
+    }
+    fields = {
+      match: change_address,
+      address: from_address
+    };
+    await BtcMatching.insert(fields);
     return res.send({ 
       status: 'done', 
       result: result.result
@@ -981,9 +996,19 @@ router.post('/api/send_raw/btc', async (req, res) => {
     }
     inputs_raw = JSON.parse(inputs_raw);
     outputs_raw = JSON.parse(outputs_raw);
+    let original_inputs = inputs_raw;
+    let matching_inputs = [];
+    for (const [key, input] of Object.entries(inputs_raw)) {
+      matching_inputs = await BtcMatching.getByAddress(input);
+      for (const [key1, match] of Object.entries(matching_inputs)) {
+        inputs_raw.push(match.match);
+      }
+    }
+    inputs_raw = [...new Set(inputs_raw)];
     let inputs = [];
     const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
     const listunspent = await utils.sendRpc("listunspent", [], "bitcoin:8332/wallet/" + wallet.name);
+    // console.log(listunspent);
     const new_address = await utils.sendRpc("getrawchangeaddress", [], "bitcoin:8332/wallet/" + wallet.name);
     let max = 0;
     for (const [key, unspent] of Object.entries(listunspent.result)) {
@@ -1048,9 +1073,27 @@ router.post('/api/send_raw/btc', async (req, res) => {
       });
     }
     const result = send_raw_transaction.result;
+    let fields = {};
+    // to do insert transactions for virtual addresses
+    // fields = {
+    //   fromWallet: wallet.name,
+    //   toWallet: null,
+    //   fromAddress: from_address,
+    //   toAddress: to_address,
+    //   amount: amount,
+    //   txid: result
+    // };
+    // await BtcTransaction.insert(fields);
+    for (const [key, input] of Object.entries(original_inputs)) {
+      fields = {
+        address: input,
+        match: new_address.result
+      };
+      await BtcMatching.insert(fields);
+    }
     return res.send({ 
       status: 'done', 
-      result: result,
+      result: result
       // listunspent: listunspent,
       // inputs: inputs,
       // outputs: outputs_raw,

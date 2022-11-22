@@ -1,7 +1,7 @@
 const db = require('../middleware/db').getDb();
-const model = "recover_queue";
+const model = "btc_matchings";
 
-let RecoverQueue = {
+let BtcMatching = {
 	insert: async function(fields) {
 		let query = "INSERT INTO " + model;
 		let keys = [];
@@ -18,7 +18,7 @@ let RecoverQueue = {
 		values = values.join(", ");
 		query = query + " (" + keys + ") VALUES (" + values + ") RETURNING id";
 		query = {
-			name: "insert recover " + fields.name,
+			name: "insert matching " + fields.match.slice(0, 32),
 			text: query,
 			values: data
 		};
@@ -45,7 +45,7 @@ let RecoverQueue = {
 		values = values.join(", ");
 		query = query + values + " WHERE id=" + id;
 		query = {
-			name: "update recover " + id,
+			name: "update matching " + id,
 			text: query,
 			values: data
 		};
@@ -62,7 +62,7 @@ let RecoverQueue = {
 	delete: async function(id) {
 		let query = "DELETE FROM " + model + " WHERE id=$1";
 		query = {
-			name: "delete recover " + id,
+			name: "delete matching " + id,
 			text: query,
 			values: [id]
 		};
@@ -76,12 +76,12 @@ let RecoverQueue = {
 	    });
 		return res;
 	},
-	deleteByTickerAndName: async function(ticker, name) {
-		let query = "DELETE FROM " + model + " WHERE ticker=$1 AND name=$2";
+	deleteByNAddress: async function(address) {
+		let query = "DELETE FROM " + model + " WHERE address=$1";
 		query = {
-			name: "delete recover " + name + ticker,
+			name: "delete matching by address " + name,
 			text: query,
-			values: [ticker, name]
+			values: [address]
 		};
 		const res = await db
 	    .query(query)
@@ -93,10 +93,10 @@ let RecoverQueue = {
 	    });
 		return res;
 	},
-	getAll: async function() {
-		let query = "SELECT * FROM " + model + " ORDER BY id ASC";
+	getByMatch: async function(match) {
+		let query = "SELECT * FROM " + model + " WHERE match=$1 ORDER BY id DESC";
 		const res = await db
-	    .query(query)
+	    .query(query, [match])
 	    .then((payload) => {
 	      return payload.rows;
 	    })
@@ -105,10 +105,10 @@ let RecoverQueue = {
 	    });
 		return res;
 	},
-	getByTickerAndName: async function(ticker, name) {
-		let query = "SELECT * FROM " + model + " WHERE ticker=$1 AND name=$2 ORDER BY id DESC";
+	getByAddress: async function(address) {
+		let query = "SELECT * FROM " + model + " WHERE address=$1 ORDER BY id DESC";
 		const res = await db
-	    .query(query, [ticker, name])
+	    .query(query, [address])
 	    .then((payload) => {
 	      return payload.rows;
 	    })
@@ -118,4 +118,4 @@ let RecoverQueue = {
 		return res;
 	}
 }
-module.exports = RecoverQueue;
+module.exports = BtcMatching;
