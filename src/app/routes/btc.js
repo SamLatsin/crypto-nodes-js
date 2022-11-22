@@ -996,7 +996,9 @@ router.post('/api/send_raw/btc', async (req, res) => {
     }
     inputs_raw = JSON.parse(inputs_raw);
     outputs_raw = JSON.parse(outputs_raw);
-    let original_inputs = inputs_raw;
+    let original_inputs = [...inputs_raw];
+    // let original_outputs = outputs_raw;
+    let original_outputs = [...outputs_raw];
     let matching_inputs = [];
     for (const [key, input] of Object.entries(inputs_raw)) {
       matching_inputs = await BtcMatching.getByAddress(input);
@@ -1032,7 +1034,7 @@ router.post('/api/send_raw/btc', async (req, res) => {
     if (raw_transaction.result == null) {
       return res.status(400).send({ 
         status: 'error', 
-        command: 'createrawtransaction',
+        command: 'createrawtransaction 1',
         error: raw_transaction.error.message
       });
     }
@@ -1044,15 +1046,22 @@ router.post('/api/send_raw/btc', async (req, res) => {
     }
     sum = sum.toFixed(8);
     fee = parseFloat(raw_transaction.result.length * fee / 1e8).toFixed(8);
+    let change = (max - parseFloat(fee) - parseFloat(sum)).toFixed(8);
+    if (parseFloat(change) < 0) {
+      return res.status(400).send({ 
+        status: 'error', 
+        error: 'No available unspent inputs, wait for confirmations of previus transactions'
+      });
+    }
     outputs_raw.push({
-      [new_address.result]: (max - parseFloat(fee) - parseFloat(sum)).toFixed(8)
+      [new_address.result]: change
     });
     args = [inputs, outputs_raw];
     raw_transaction = await utils.sendRpc("createrawtransaction", args, "bitcoin:8332/");
     if (raw_transaction.result == null) {
       return res.status(400).send({ 
         status: 'error', 
-        command: 'createrawtransaction',
+        command: 'createrawtransaction 2',
         error: raw_transaction.error.message
       });
     }
@@ -1073,23 +1082,71 @@ router.post('/api/send_raw/btc', async (req, res) => {
       });
     }
     const result = send_raw_transaction.result;
+    let balances = [];
     let fields = {};
-    // to do insert transactions for virtual addresses
-    // fields = {
-    //   fromWallet: wallet.name,
-    //   toWallet: null,
-    //   fromAddress: from_address,
-    //   toAddress: to_address,
-    //   amount: amount,
-    //   txid: result
-    // };
-    // await BtcTransaction.insert(fields);
     for (const [key, input] of Object.entries(original_inputs)) {
       fields = {
         address: input,
         match: new_address.result
       };
       await BtcMatching.insert(fields);
+      let temp = await Btc.getByAddress(input);
+      if (temp && temp.length !== 0) {
+        balances.push({
+          address: temp[0].address,
+          balance: parseFloat(temp[0].balance)
+        });
+      } 
+    }
+    let amounts = [];
+    for (const [key, output] of Object.entries(original_outputs)) {
+      for (const key1 in output) {
+        amounts.push({
+          address: key1,
+          amount: parseFloat(output[key1]),
+          payed: false
+        });
+      }
+    }
+    let check_fee = true;
+    for (const [key, balance] of Object.entries(balances)) {
+      for (const [key1, amount] of Object.entries(amounts)) {
+        if (check_fee) {
+          if (!amount.payed) {
+            if (balance.balance > (parseFloat(fee) + amount.amount)) {
+              check_fee = false;
+              fields = {
+                fromWallet: wallet.name,
+                toWallet: null,
+                fromAddress: balance.address,
+                toAddress: amount.address,
+                amount: amount.amount,
+                fee: fee,
+                txid: result
+              };
+              await BtcTransaction.insert(fields);
+              amounts[key1].payed = true;
+            }
+          }
+        }
+        else {
+          if (!amount.payed) {
+            if (balance.balance > amount.amount) {
+              fields = {
+                fromWallet: wallet.name,
+                toWallet: null,
+                fromAddress: balance.address,
+                toAddress: amount.address,
+                amount: amount.amount,
+                fee: 0,
+                txid: result
+              };
+              await BtcTransaction.insert(fields);
+              amounts[key1].payed = true;
+            }
+          }
+        }
+      }
     }
     return res.send({ 
       status: 'done', 
