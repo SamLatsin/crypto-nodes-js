@@ -77,9 +77,32 @@ services:
     logging:
       driver: none
 
+  pgbackups:
+    container_name: pgbackup
+    image: prodrigestivill/postgres-backup-local
+    restart: always
+    volumes:
+      - ./backup:/backups
+    links:
+      - postgres:postgres
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${PG_DBNAME}
+      - POSTGRES_USER=${PG_USER}
+      - POSTGRES_PASSWORD=${PG_PASSWORD}
+      - POSTGRES_EXTRA_OPTS=-Z9 --schema=public --blobs
+      - SCHEDULE=@every 0h30m00s
+      - BACKUP_KEEP_DAYS=7
+      - BACKUP_KEEP_WEEKS=4
+      - BACKUP_KEEP_MONTHS=6
+      - HEALTHCHECK_PORT=81
+
   nginx:
     container_name: nginx
     image: nginx
+    restart: on-failure
     links:
       - app
     ports:
@@ -91,13 +114,14 @@ services:
   app:
     container_name: node
     build: ./app
+    restart: on-failure
     depends_on:
       - postgres
     ports:
       - "5656:5656"
     volumes:
       - ./app/:/usr/src/app
-      - /usr/src/app//node_modules
+      - /usr/src/app/node_modules
       - ./bitcoin-data:/root/bitcoin-data
     depends_on:
       - bitcoin
@@ -107,6 +131,7 @@ services:
   bitcoin:
     container_name: bitcoin
     image: kylemanna/bitcoind:latest
+    restart: on-failure
     volumes:
       - ./bitcoin-data:/bitcoin/.bitcoin
       - type: bind

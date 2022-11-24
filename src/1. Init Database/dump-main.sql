@@ -1,16 +1,9 @@
 --
--- NOTE:
---
--- File paths need to be edited. Search for $$PATH$$ and
--- replace it with the path to the directory containing
--- the extracted data files.
---
---
 -- PostgreSQL database dump
 --
 
 -- Dumped from database version 15.0 (Debian 15.0-1.pgdg110+1)
--- Dumped by pg_dump version 15.0
+-- Dumped by pg_dump version 15.0 (Debian 15.0-1.pgdg110+1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -23,28 +16,21 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
-DROP DATABASE main;
 --
--- Name: main; Type: DATABASE; Schema: -; Owner: admin
+-- Name: public; Type: SCHEMA; Schema: -; Owner: pg_database_owner
 --
 
-CREATE DATABASE main WITH TEMPLATE = template0 ENCODING = 'UTF8' LOCALE_PROVIDER = libc LOCALE = 'en_US.utf8';
+CREATE SCHEMA public;
 
 
-ALTER DATABASE main OWNER TO admin;
+ALTER SCHEMA public OWNER TO pg_database_owner;
 
--- \connect main
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: pg_database_owner
+--
 
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
+COMMENT ON SCHEMA public IS 'standard public schema';
+
 
 --
 -- Name: btc_seq; Type: SEQUENCE; Schema: public; Owner: admin
@@ -79,6 +65,34 @@ CREATE TABLE public.btc (
 
 
 ALTER TABLE public.btc OWNER TO admin;
+
+--
+-- Name: btc_matchings_seq; Type: SEQUENCE; Schema: public; Owner: admin
+--
+
+CREATE SEQUENCE public.btc_matchings_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.btc_matchings_seq OWNER TO admin;
+
+--
+-- Name: btc_matchings; Type: TABLE; Schema: public; Owner: admin
+--
+
+CREATE TABLE public.btc_matchings (
+    id integer DEFAULT nextval('public.btc_matchings_seq'::regclass) NOT NULL,
+    match character varying(64) NOT NULL,
+    address character varying(64) NOT NULL,
+    date timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.btc_matchings OWNER TO admin;
 
 --
 -- Name: btc_transactions_seq; Type: SEQUENCE; Schema: public; Owner: admin
@@ -167,7 +181,7 @@ CREATE TABLE public.recover_queue (
     ticker character varying(10) NOT NULL,
     name character varying(64) NOT NULL,
     recovering integer DEFAULT 0 NOT NULL,
-    startheight integer,
+    "startHeight" integer,
     date timestamp with time zone DEFAULT now()
 );
 
@@ -225,10 +239,11 @@ CREATE TABLE public.wallets (
     ticker character varying(10) NOT NULL,
     name character varying(64) NOT NULL,
     "privateKey" character varying(256) NOT NULL,
-    mnemonic character varying(1024) NOT NULL,
+    mnemonic character varying(1024),
     "walletToken" character varying(128) NOT NULL,
     "lastSync" timestamp with time zone,
-    date timestamp with time zone DEFAULT now()
+    date timestamp with time zone DEFAULT now(),
+    recovered integer DEFAULT 0
 );
 
 
@@ -287,21 +302,27 @@ CREATE TABLE public.zcasht (
     date timestamp with time zone DEFAULT now()
 );
 
-
 ALTER TABLE public.zcasht OWNER TO admin;
+
+--
+-- Name: btc_matchings_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
+--
+
+SELECT pg_catalog.setval('public.btc_matchings_seq', 44, true);
+
 
 --
 -- Name: btc_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
 --
 
-SELECT pg_catalog.setval('public.btc_seq', 3, true);
+SELECT pg_catalog.setval('public.btc_seq', 239, true);
 
 
 --
 -- Name: btc_transactions_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
 --
 
-SELECT pg_catalog.setval('public.btc_transactions_seq', 1, false);
+SELECT pg_catalog.setval('public.btc_transactions_seq', 118, true);
 
 
 --
@@ -315,7 +336,7 @@ SELECT pg_catalog.setval('public.eth_seq', 1, false);
 -- Name: recover_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
 --
 
-SELECT pg_catalog.setval('public.recover_seq', 1, false);
+SELECT pg_catalog.setval('public.recover_seq', 157, true);
 
 
 --
@@ -329,7 +350,7 @@ SELECT pg_catalog.setval('public.trx_seq', 1, false);
 -- Name: wallet_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
 --
 
-SELECT pg_catalog.setval('public.wallet_seq', 34, true);
+SELECT pg_catalog.setval('public.wallet_seq', 200, true);
 
 
 --

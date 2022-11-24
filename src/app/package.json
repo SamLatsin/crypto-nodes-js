@@ -1,9 +1,9 @@
 {
   "name": "crypto-nodes-rest-api",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
   "scripts": {
-    "start": "nodemon ./bin/www",
+    "start": "node ./bin/www",
     "lint": "eslint .",
     "lint:fix": "eslint --fix ."
   },
