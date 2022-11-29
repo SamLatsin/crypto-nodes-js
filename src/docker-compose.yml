@@ -165,36 +165,36 @@ services:
   #     -disablewallet=0
   #     -"walletnotify=/bin/notify.sh %s %w"
 
-  geth:
-    container_name: geth
-    image: ethereum/client-go:latest
-    volumes:
-      - ./ethereum-data/geth:/root/.ethereum
-      - type: bind
-        source: ./configs/eth.toml
-        target: /root/config.toml
-    restart: on-failure
-    command:
-      --http 
-      --http.api personal,eth,net,web3 
-      --config "/root/config.toml" 
-      --cache 2048
+  # geth:
+  #   container_name: geth
+  #   image: ethereum/client-go:latest
+  #   volumes:
+  #     - ./ethereum-data/geth:/root/.ethereum
+  #     - type: bind
+  #       source: ./configs/eth.toml
+  #       target: /root/config.toml
+  #   restart: on-failure
+  #   command:
+  #     --http 
+  #     --http.api personal,eth,net,web3 
+  #     --config "/root/config.toml" 
+  #     --cache 2048
 
-  prysm:
-    container_name: prysm
-    image: prysmaticlabs/prysm-beacon-chain:latest
-    volumes:
-      - ./ethereum-data/prysm:/root/prysm-data
-      - ./ethereum-data/geth:/root/geth
-    depends_on:
-      - geth
-    restart: on-failure
-    command:
-      --accept-terms-of-use
-      --execution-endpoint=geth
-      --datadir=/root/prysm-data
-      --execution-endpoint=/root/geth/geth.ipc
-      # --authrpc.addr=geth
+  # prysm:
+  #   container_name: prysm
+  #   image: prysmaticlabs/prysm-beacon-chain:latest
+  #   volumes:
+  #     - ./ethereum-data/prysm:/root/prysm-data
+  #     - ./ethereum-data/geth:/root/geth
+  #   depends_on:
+  #     - geth
+  #   restart: on-failure
+  #   command:
+  #     --accept-terms-of-use
+  #     --execution-endpoint=geth
+  #     --datadir=/root/prysm-data
+  #     --execution-endpoint=/root/geth/geth.ipc
+  #     # --authrpc.addr=geth
 
   geth-ropsten:
     container_name: geth-ropsten

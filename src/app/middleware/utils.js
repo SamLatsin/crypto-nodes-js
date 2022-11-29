@@ -10,6 +10,11 @@ module.exports = {
 					return true;
 				}
 			}
+			if (ticker == "eth") {
+				if (req.body.token == process.env.ETH_TOKEN) {
+					return true;
+				}
+			}
 			return false;
 		}
 		return true;
@@ -22,6 +27,24 @@ module.exports = {
 		     "content-type": "application/x-www-form-urlencoded"
 		    },
 		    body: JSON.stringify( {"jsonrpc": "1.0", "id": "curltest", "method": method, "params": args })
+		};
+		try {
+			const res = await axios.post(options.url, options.body, options.headers);
+			return res.data; 
+		}
+		catch (error) {
+			return error.response.data;
+		}
+	},
+	sendRpcEth: async function(method, args, link) {
+		let options = {
+		    url: "http://" + link,
+		    headers:
+		    { 
+		     // "content-type": "application/x-www-form-urlencoded" // or application/json
+		     "content-type": "application/json"
+		    },
+		    body: JSON.stringify( {"method": method, "id": "1", "params": args, "jsonrpc": "2.0"})
 		};
 		try {
 			const res = await axios.post(options.url, options.body, options.headers);

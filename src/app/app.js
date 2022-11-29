@@ -13,6 +13,7 @@ let db = require('./middleware/db');
 db.connectToDb();
 
 const btcRouter = require('./routes/btc');
+const ethRouter = require('./routes/eth');
 const cronRouter = require('./routes/cron');
 const skip_token_check = ["/api/import/private_keys/btc"];
 
@@ -36,6 +37,7 @@ app.use(function (req, res, next) {
 });
 
 app.use('/', btcRouter);
+app.use('/', ethRouter);
 app.use('/', cronRouter);
 
 // catch 404 and forward to error handler
