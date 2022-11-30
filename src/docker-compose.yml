@@ -177,6 +177,9 @@ services:
   #   command:
   #     --http 
   #     --http.api personal,eth,net,web3 
+  #     --http.port 8545
+  #     --http.addr 0.0.0.0
+  #     --http.vhosts *
   #     --config "/root/config.toml" 
   #     --cache 2048
 

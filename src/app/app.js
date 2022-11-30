@@ -12,8 +12,6 @@ cron.schedule('*/10 * * * *', () => {
 let db = require('./middleware/db');
 db.connectToDb();
 
-
-
 const ethRouter = require('./routes/eth');
 const cronRouter = require('./routes/cron');
 const skip_token_check = ["/api/import/private_keys/btc"];

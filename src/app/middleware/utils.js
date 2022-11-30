@@ -39,8 +39,7 @@ module.exports = {
 	sendRpcEth: async function(method, args, link) {
 		let options = {
 		    url: "http://" + link,
-		    headers:
-		    { 
+		    headers: { 
 		    	'Content-Type': 'application/json',
 		    },
 		    body: {
