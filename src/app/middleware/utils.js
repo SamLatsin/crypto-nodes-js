@@ -41,13 +41,17 @@ module.exports = {
 		    url: "http://" + link,
 		    headers:
 		    { 
-		     // "content-type": "application/x-www-form-urlencoded" // or application/json
-		     "content-type": "application/json"
+		    	'Content-Type': 'application/json',
 		    },
-		    body: JSON.stringify( {"method": method, "id": "1", "params": args, "jsonrpc": "2.0"})
+		    body: {
+			    jsonrpc: '2.0',
+			    method: method,
+			    params: args,
+			    id: 1
+			}
 		};
 		try {
-			const res = await axios.post(options.url, options.body, options.headers);
+			const res = await axios.post(options.url, options.body, { 'Content-Type': 'application/json' });
 			return res.data; 
 		}
 		catch (error) {

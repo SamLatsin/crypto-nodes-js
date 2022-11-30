@@ -12,7 +12,8 @@ cron.schedule('*/10 * * * *', () => {
 let db = require('./middleware/db');
 db.connectToDb();
 
-const btcRouter = require('./routes/btc');
+
+
 const ethRouter = require('./routes/eth');
 const cronRouter = require('./routes/cron');
 const skip_token_check = ["/api/import/private_keys/btc"];
@@ -36,7 +37,11 @@ app.use(function (req, res, next) {
   });
 });
 
-app.use('/', btcRouter);
+if (process.env.BTC_ENABLED == 1) {
+  const btcRouter = require('./routes/btc');
+  app.use('/', btcRouter);
+}
+
 app.use('/', ethRouter);
 app.use('/', cronRouter);
 
