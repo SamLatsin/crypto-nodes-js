@@ -22,7 +22,9 @@
     "multer": "^1.4.5-lts.1",
     "ethereum-private-key-to-address": "^0.0.7",
     "ethereum-hdwallet": "^0.1.2",
-    "bip39": "^3.0.4"
+    "bip39": "^3.0.4",
+    "@ethereumjs/tx": "^4.0.1",
+    "web3": "^1.8.1"
   },
   "devDependencies": {
     "eslint": "^5.16.0",
