@@ -94,9 +94,14 @@ module.exports = {
 	    	error: "Bad token",
 	    });
 	},
-	sleep: function sleep(ms) {
+	sleep: function(ms) {
 		return new Promise((resolve) => {
 			setTimeout(resolve, ms);
 		});
+	},
+	padLeadingZeros: function(num, size) {
+	    var s = num+"";
+	    while (s.length < size) s = "0" + s;
+	    return s;
 	}
 };

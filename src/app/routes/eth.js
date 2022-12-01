@@ -7,13 +7,19 @@ const router = express.Router();
 
 let network = "";
 let service = "";
+let contract = "";
+let decimals = 0;
 if (process.env.ETH_TESTNET == 1) {
   network = "sepolia";
-  service = "geth-sepolia:8545"
+  service = "geth-sepolia:8545";
+  contract = "0x91B333A8485737f9B93327483030f48526FaDc22"; // testnet erc20 token
+  decimals = 1e18;
 }
 else {
   network = "mainnet";
   service = "geth:8545";
+  contract = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+  decimals = 1e6;
 }
 
 function generateWallet(mnemonic = null, private_key = null) {
@@ -99,6 +105,38 @@ router.post('/api/get/address/eth', async (req, res) => {
     return res.send({ 
       status: 'done', 
       address: address[0].address,
+    });
+  }
+  return utils.badRequest(res);
+});
+
+router.post('/api/get/balance/eth', async (req, res) => {
+  const name = req.body.name;
+  const token = req.body.walletToken;
+  let wallet = await Wallet.getByTickerAndName('eth', name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != token) {
+      return utils.badToken(res);
+    }
+    let address = await Eth.getByName(wallet.name);
+    address = address[0].address;
+    let args = [address, "latest"];
+    let result = await utils.sendRpcEth("eth_getBalance", args, service);
+    const balance = parseFloat(Number(result.result)) / 1e18;
+    address = address.substring(2);
+    data = "0x70a08231" + address.padStart(64, 0); // balanceOf(address)
+    args = {
+      to: contract,
+      data: data
+    };
+    result = await utils.sendRpcEth("eth_call", [args, "latest"], service);
+    const tokens = parseFloat(Number(result.result)) / decimals;
+    return res.send({ 
+      status: 'done', 
+      name: name,
+      balance: balance,
+      tokens: isNaN(tokens) ? 0 : tokens,
     });
   }
   return utils.badRequest(res);
