@@ -142,6 +142,27 @@ router.post('/api/get/balance/eth', async (req, res) => {
   return utils.badRequest(res);
 });
 
+router.post('/api/get/fee/eth', async (req, res) => {
+  const name = req.body.name;
+  const token = req.body.walletToken;
+  const amount = req.body.amount;
+  const to_address = req.body.address;
+  let wallet = await Wallet.getByTickerAndName('eth', name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != token) {
+      return utils.badToken(res);
+    }
+    const gas_price = await utils.sendRpcEth("eth_gasPrice", [], service);
+    const fee = parseFloat(Number(gas_price.result)) / 1e18 * 21000;
+    return res.send({ 
+      status: 'done', 
+      fee: fee
+    });
+  }
+  return utils.badRequest(res);
+});
+
 router.post('/api/test/eth', async (req, res) => {
   const name = req.body.name;
   return res.send({ 
