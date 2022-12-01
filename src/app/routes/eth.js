@@ -223,12 +223,51 @@ router.post('/api/send/eth', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/test/eth', async (req, res) => {
-  const name = req.body.name;
+router.post('/api/wallet/recover/eth', async (req, res) => {
+  const mnemonic = req.body.mnemonic;
+  const private_key = req.body.privateKey;
+  const wallet = await Wallet.getLastByTicker("eth");
+  if (wallet && wallet.length !== 0) {
+    name = 'rw' + (parseInt(utils.getNumbers(wallet[0].name)[0]) + 1);
+  }
+  else {
+    name = 'rw1';
+  }
+  data = generateWallet(mnemonic, private_key);
+  if (!mnemonic) {
+    data.mnemonic = null;
+  }
+  const wallet_token = utils.generateUUID();
+  let fields = {
+    ticker: 'eth',
+    name: name,
+    privateKey: data.privateKey,
+    mnemonic: data.mnemonic,
+    walletToken: wallet_token
+  };
+  await Wallet.insert(fields);
+  fields = {
+    name: name,
+    address: data.address
+  }
+  await Eth.insert(fields);
   return res.send({ 
-    status: 'done',
-    name: name
+    status: 'done', 
+    name: name,
+    mnemonic: data.mnemonic,
+    privateKey: data.privateKey,
+    walletToken: wallet_token,
   });
 });
+
+// router.post('/api/test/eth', async (req, res) => {
+//   const name = req.body.name;
+//   return res.send({ 
+//     status: 'done',
+//     name: name
+//   });
+// });
+
+
 
 module.exports = router;
