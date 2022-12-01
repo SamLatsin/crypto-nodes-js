@@ -12,7 +12,6 @@ cron.schedule('*/10 * * * *', () => {
 let db = require('./middleware/db');
 db.connectToDb();
 
-const ethRouter = require('./routes/eth');
 const cronRouter = require('./routes/cron');
 const skip_token_check = ["/api/import/private_keys/btc"];
 
@@ -39,8 +38,11 @@ if (process.env.BTC_ENABLED == 1) {
   const btcRouter = require('./routes/btc');
   app.use('/', btcRouter);
 }
+if (process.env.ETH_ENABLED == 1) {
+  const ethRouter = require('./routes/eth');
+  app.use('/', ethRouter);
+}
 
-app.use('/', ethRouter);
 app.use('/', cronRouter);
 
 // catch 404 and forward to error handler

@@ -199,17 +199,17 @@ services:
   #     --execution-endpoint=/root/geth/geth.ipc
   #     # --authrpc.addr=geth
 
-  geth-ropsten:
-    container_name: geth-ropsten
+  geth-sepolia:
+    container_name: geth-sepolia
     image: ethereum/client-go:latest
     volumes:
-      - ./ethereum-ropsten-data/geth:/root/.ethereum
+      - ./ethereum-sepolia-data/geth:/root/.ethereum
       - type: bind
         source: ./configs/eth.toml
         target: /root/config.toml
     restart: on-failure
     command:
-      --ropsten
+      --sepolia
       --http 
       --http.api personal,eth,net,web3 
       --http.port 8545
@@ -218,22 +218,22 @@ services:
       --config "/root/config.toml" 
       --cache 2048
 
-  prysm-ropsten:
-    container_name: prysm-ropsten
+  prysm-sepolia:
+    container_name: prysm-sepolia
     image: prysmaticlabs/prysm-beacon-chain:latest
     volumes:
-      - ./ethereum-ropsten-data/prysm:/root/prysm-data
-      - ./ethereum-ropsten-data/geth:/root/geth
+      - ./ethereum-sepolia-data/prysm:/root/prysm-data
+      - ./ethereum-sepolia-data/geth:/root/geth
       - type: bind
         source: ./configs/genesis.ssz
         target: /root/genesis.ssz
     depends_on:
-      - geth-ropsten
+      - geth-sepolia
     restart: on-failure
     command:
-      --ropsten
+      --sepolia
       --accept-terms-of-use
       --execution-endpoint=geth
       --datadir=/root/prysm-data
-      --execution-endpoint=/root/geth/ropsten/geth.ipc
+      --execution-endpoint=/root/geth/sepolia/geth.ipc
       --genesis-state=/root/genesis.ssz
