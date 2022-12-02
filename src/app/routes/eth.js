@@ -260,6 +260,26 @@ router.post('/api/wallet/recover/eth', async (req, res) => {
   });
 });
 
+router.post('/api/get/history/eth', async (req, res) => {
+  const name = req.body.name;
+  const token = req.body.walletToken;
+  let wallet = await Wallet.getByTickerAndName('eth', name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != token) {
+      return utils.badToken(res);
+    }
+    let address = await Eth.getByName(wallet.name);
+    address = address[0].address;
+    
+    return res.send({ 
+      status: 'done', 
+      name: name
+    });
+  }
+  return utils.badRequest(res);
+});
+
 // router.post('/api/test/eth', async (req, res) => {
 //   const name = req.body.name;
 //   return res.send({ 

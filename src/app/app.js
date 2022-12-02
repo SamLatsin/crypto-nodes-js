@@ -40,7 +40,9 @@ if (process.env.BTC_ENABLED == 1) {
 }
 if (process.env.ETH_ENABLED == 1) {
   const ethRouter = require('./routes/eth');
+  const erc20Router = require('./routes/erc20');
   app.use('/', ethRouter);
+  app.use('/', erc20Router);
 }
 
 app.use('/', cronRouter);
