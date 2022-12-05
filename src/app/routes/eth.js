@@ -4,37 +4,41 @@ const Wallet = require('../classes/wallet.class');
 const Eth = require('../classes/eth.class');
 const Web3 = require('web3')
 const ethTx = require('@ethereumjs/tx').Transaction
+const Chain = require('@ethereumjs/common').Chain;
+const Common = require('@ethereumjs/common').Common;
+const Hardfork = require('@ethereumjs/common').Hardfork;
 const router = express.Router();
 
 let network = "";
 let service = "";
 let contract = "";
 let decimals = 0;
-let chainId = 0;
+let chain = null;
 if (process.env.ETH_TESTNET == 1) {
   network = "sepolia";
   service = "geth-sepolia:8545";
   contract = "0x91B333A8485737f9B93327483030f48526FaDc22"; // testnet erc20 token
   decimals = 1e18;
-  chainId = 11155111;
+  chain = Chain.Sepolia;
 }
 else {
   network = "mainnet";
   service = "geth:8545";
   contract = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
   decimals = 1e6;
-  chainId = 1;
+  chain = Chain.Mainnet;
 }
 
 async function createTx(addressFrom, addressTo, valueInEther, privKey, memo) {
   var provider = 'http://' + service;
   var web3 = new Web3(new Web3.providers.HttpProvider(provider))
   web3.transactionConfirmationBlocks = 1;
+  chainId = await web3.eth.net.getId();
   privKey = Buffer.from(privKey.slice(2), 'hex'); // Exclude 0x at the beginning of the private key
   let txnCount = await web3.eth.getTransactionCount(addressFrom, "pending");
   let gasPrice = await web3.eth.getGasPrice();
   var txObject = {
-      'chainId': chainId,
+      // 'chainId': web3.utils.numberToHex(chainId),
       'nonce': web3.utils.numberToHex(txnCount),
       'to': addressTo,
       'gasPrice': web3.utils.numberToHex(gasPrice),
@@ -42,11 +46,14 @@ async function createTx(addressFrom, addressTo, valueInEther, privKey, memo) {
       'value': web3.utils.numberToHex(web3.utils.toWei(valueInEther.toString(), 'ether')),
       'type': 2,
   };
+  console.log(web3.utils.numberToHex(gasPrice))
+  console.log(txObject);
   if (memo) {
     txObject.data = web3.utils.utf8ToHex(memo)
   }
-  const tx = new ethTx(txObject, { chain: network})
-  tx.sign(privKey)
+  const common = new Common({ chain: chain });
+  let tx = new ethTx(txObject, {common})
+  tx = tx.sign(privKey);
   var serializedTx = tx.serialize();
   var rawTxHex = '0x' + serializedTx.toString('hex');
   return rawTxHex;
@@ -153,6 +160,7 @@ router.post('/api/get/balance/eth', async (req, res) => {
     address = address[0].address;
     let args = [address, "latest"];
     let result = await utils.sendRpcEth("eth_getBalance", args, service);
+    console.log(result);
     const balance = parseFloat(Number(result.result)) / 1e18;
     address = address.substring(2);
     data = "0x70a08231" + address.padStart(64, 0); // balanceOf(address)
@@ -187,7 +195,7 @@ router.post('/api/get/fee/eth', async (req, res) => {
     const fee = parseFloat(Number(gas_price.result)) / 1e18 * 21000;
     return res.send({ 
       status: 'done', 
-      fee: fee
+      fee: fee.toFixed(8)
     });
   }
   return utils.badRequest(res);
@@ -272,9 +280,12 @@ router.post('/api/get/history/eth', async (req, res) => {
     let address = await Eth.getByName(wallet.name);
     address = address[0].address;
     
+    address = "0xF29A6c0f8eE500dC87d0d4EB8B26a6faC7A76767" // test
+
     return res.send({ 
       status: 'done', 
-      name: name
+      name: name,
+      result: result
     });
   }
   return utils.badRequest(res);
