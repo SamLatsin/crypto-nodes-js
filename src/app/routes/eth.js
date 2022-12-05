@@ -30,14 +30,14 @@ else {
 }
 
 async function createTx(addressFrom, addressTo, valueInEther, privKey, memo) {
-  var provider = 'http://' + service;
-  var web3 = new Web3(new Web3.providers.HttpProvider(provider))
+  let provider = 'http://' + service;
+  let web3 = new Web3(new Web3.providers.HttpProvider(provider))
   web3.transactionConfirmationBlocks = 1;
   chainId = await web3.eth.net.getId();
   privKey = Buffer.from(privKey.slice(2), 'hex'); // Exclude 0x at the beginning of the private key
   let txnCount = await web3.eth.getTransactionCount(addressFrom, "pending");
   let gasPrice = await web3.eth.getGasPrice();
-  var txObject = {
+  let txObject = {
       // 'chainId': web3.utils.numberToHex(chainId),
       'nonce': web3.utils.numberToHex(txnCount),
       'to': addressTo,
@@ -52,8 +52,8 @@ async function createTx(addressFrom, addressTo, valueInEther, privKey, memo) {
   const common = new Common({ chain: chain });
   let tx = new ethTx(txObject, {common})
   tx = tx.sign(privKey);
-  var serializedTx = tx.serialize();
-  var rawTxHex = '0x' + serializedTx.toString('hex');
+  let serializedTx = tx.serialize();
+  let rawTxHex = '0x' + serializedTx.toString('hex');
   return rawTxHex;
 }
 
@@ -82,18 +82,18 @@ function generateWallet(mnemonic = null, private_key = null) {
 }
 
 // async function getHistory(address) {
-//   var provider = 'http://' + service;
-//   var web3 = new Web3(new Web3.providers.HttpProvider(provider))
-//   var currentBlock = await web3.eth.getBlockNumber();
-//   var n = await web3.eth.getTransactionCount(address, currentBlock);
-//   var bal = await web3.eth.getBalance(address, currentBlock);
+//   let provider = 'http://' + service;
+//   let web3 = new Web3(new Web3.providers.HttpProvider(provider))
+//   let currentBlock = await web3.eth.getBlockNumber();
+//   let n = await web3.eth.getTransactionCount(address, currentBlock);
+//   let bal = await web3.eth.getBalance(address, currentBlock);
 //   console.log(bal);
 //   console.log(n);
 //   console.log(currentBlock);
 
-//   for (var i=currentBlock; i >= 0 && (n > 0 || bal > 0); --i) {
+//   for (let i=currentBlock; i >= 0 && (n > 0 || bal > 0); --i) {
 //       try {
-//           var block = await web3.eth.getBlock(i, true);
+//           let block = await web3.eth.getBlock(i, true);
 //           // console.log(i);
 //           // console.log(block);
 //           if (block && block.transactions) {
@@ -227,7 +227,7 @@ router.post('/api/get/fee/eth', async (req, res) => {
     const fee = parseFloat(Number(gas_price.result)) / 1e18 * 21000;
     return res.send({ 
       status: 'done', 
-      fee: fee.toFixed(8)
+      result: fee.toFixed(8)
     });
   }
   return utils.badRequest(res);

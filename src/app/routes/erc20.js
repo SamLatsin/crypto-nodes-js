@@ -29,31 +29,55 @@ else {
   chain = Chain.Mainnet;
 }
 
-// async function createTx(addressFrom, addressTo, valueInEther, privKey, memo) {
-//   var provider = 'http://' + service;
-//   var web3 = new Web3(new Web3.providers.HttpProvider(provider))
-//   web3.transactionConfirmationBlocks = 1;
-//   privKey = Buffer.from(privKey.slice(2), 'hex'); // Exclude 0x at the beginning of the private key
-//   let txnCount = await web3.eth.getTransactionCount(addressFrom, "pending");
-//   let gasPrice = await web3.eth.getGasPrice();
-//   var txObject = {
-//       'chainId': chainId,
-//       'nonce': web3.utils.numberToHex(txnCount),
-//       'to': addressTo,
-//       'gasPrice': web3.utils.numberToHex(gasPrice),
-//       'gasLimit': web3.utils.numberToHex(70000),
-//       'value': web3.utils.numberToHex(web3.utils.toWei(valueInEther.toString(), 'ether')),
-//       'type': 2,
-//   };
-//   if (memo) {
-//     txObject.data = web3.utils.utf8ToHex(memo)
-//   }
-//   const tx = new ethTx(txObject, { chain: network})
-//   tx.sign(privKey)
-//   var serializedTx = tx.serialize();
-//   var rawTxHex = '0x' + serializedTx.toString('hex');
-//   return rawTxHex;
-// }
+async function getContractFee(toAddress, amount) {
+  let provider = 'http://' + service;
+  let web3 = new Web3(new Web3.providers.HttpProvider(provider))
+  web3.transactionConfirmationBlocks = 1;
+  const addressTo = toAddress;
+  const valueInEther = amount;
+
+  const method = '0xa9059cbb'; // 'transfer(address,uint256)' in keccak-256 hash
+  const UINT256_addressTo = utils.padLeadingZeros(addressTo.slice(2), 64)
+  tokens = web3.utils.numberToHex(valueInEther * decimals); 
+  tokens = utils.padLeadingZeros(tokens.slice(2), 64);
+  const data = method + UINT256_addressTo + tokens;
+
+  const bytes_count = data.slice(2).length / 2;
+  let gasPrice = await web3.eth.getGasPrice();
+  const gasUsed = (200 * bytes_count + 21000);
+  const fee = gasUsed * gasPrice / 1e18;
+  return fee;
+}
+
+async function createContract(addressFrom, addressTo, valueInEther, privKey) {
+  let provider = 'http://' + service;
+  let web3 = new Web3(new Web3.providers.HttpProvider(provider))
+  web3.transactionConfirmationBlocks = 1;
+  privKey = Buffer.from(privKey.slice(2), 'hex'); // Exclude 0x at the beginning of the private key
+  const contract_address = contract; 
+  const method = '0xa9059cbb'; // 'transfer(address,uint256)' in keccak-256 hash
+  const UINT256_addressTo = utils.padLeadingZeros(addressTo.slice(2), 64)
+  tokens = web3.utils.numberToHex(valueInEther * decimals); 
+  tokens = utils.padLeadingZeros(tokens.slice(2), 64);
+  const data = method + UINT256_addressTo + tokens;
+  let txnCount = await web3.eth.getTransactionCount(addressFrom, "pending");
+  let gasPrice = await web3.eth.getGasPrice();
+  let txObject = {
+      'nonce': web3.utils.numberToHex(txnCount),
+      'to': contract_address,
+      'gasPrice': web3.utils.numberToHex(gasPrice),
+      'gasLimit': web3.utils.numberToHex(70000),
+      'value': '0x0',
+      // 'type': 2
+      'data': data,
+  };
+  const common = new Common({ chain: chain });
+  let tx = new ethTx(txObject, {common});
+  tx = tx.sign(privKey)
+  let serializedTx = tx.serialize();
+  let rawTxHex = '0x' + serializedTx.toString('hex');
+  return rawTxHex;
+}
 
 router.post('/api/get/balance/erc20', async (req, res) => {
   const name = req.body.name;
@@ -84,54 +108,52 @@ router.post('/api/get/balance/erc20', async (req, res) => {
 });
 
 router.post('/api/get/fee/erc20', async (req, res) => {
-  // const name = req.body.name;
-  // const token = req.body.walletToken;
-  // const amount = req.body.amount;
-  // const to_address = req.body.address;
-  // let wallet = await Wallet.getByTickerAndName('eth', name);
-  // if (wallet && wallet.length !== 0) {
-  //   wallet = wallet[0];
-  //   if (wallet.walletToken != token) {
-  //     return utils.badToken(res);
-  //   }
-  //   const gas_price = await utils.sendRpcEth("eth_gasPrice", [], service);
-  //   const fee = parseFloat(Number(gas_price.result)) / 1e18 * 21000;
-  //   return res.send({ 
-  //     status: 'done', 
-  //     fee: fee
-  //   });
-  // }
-  // return utils.badRequest(res);
+  const name = req.body.name;
+  const token = req.body.walletToken;
+  const amount = req.body.amount;
+  const to_address = req.body.address;
+  let wallet = await Wallet.getByTickerAndName('eth', name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != token) {
+      return utils.badToken(res);
+    }
+    let result = await getContractFee(to_address, amount);
+    return res.send({ 
+      status: 'done', 
+      result: result
+    });
+  }
+  return utils.badRequest(res);
 });
 
 router.post('/api/send/erc20', async (req, res) => {
-  // const name = req.body.name;
-  // const token = req.body.walletToken;
-  // const amount = req.body.amount;
-  // const to_address = req.body.address;
-  // const memo = req.body.memo;
-  // let wallet = await Wallet.getByTickerAndName('eth', name);
-  // if (wallet && wallet.length !== 0) {
-  //   wallet = wallet[0];
-  //   if (wallet.walletToken != token) {
-  //     return utils.badToken(res);
-  //   }
-  //   let from_address = await Eth.getByName(wallet.name);
-  //   from_address = from_address[0].address;
-  //   let result = await createTx(from_address, to_address, amount, wallet.privateKey, memo);
-  //   result = await utils.sendRpcEth("eth_sendRawTransaction", [result], service);
-  //   if ("error" in result) {
-  //     return res.status(400).send({ 
-  //       status: 'error', 
-  //       error: result.error.message
-  //     });
-  //   }
-  //   return res.send({ 
-  //     status: 'done', 
-  //     result: result
-  //   });
-  // }
-  // return utils.badRequest(res);
+  const name = req.body.name;
+  const token = req.body.walletToken;
+  const amount = req.body.amount;
+  const to_address = req.body.address;
+  let wallet = await Wallet.getByTickerAndName('eth', name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != token) {
+      return utils.badToken(res);
+    }
+    let from_address = await Eth.getByName(wallet.name);
+    from_address = from_address[0].address;
+    let result = await createContract(from_address, to_address, amount, wallet.privateKey);
+    result = await utils.sendRpcEth("eth_sendRawTransaction", [result], service);
+    if ("error" in result) {
+      return res.status(400).send({ 
+        status: 'error', 
+        error: result.error.message
+      });
+    }
+    return res.send({ 
+      status: 'done', 
+      txHash: result.result
+    });
+  }
+  return utils.badRequest(res);
 });
 
 router.post('/api/get/history/erc20', async (req, res) => {
