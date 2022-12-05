@@ -10,7 +10,7 @@ module.exports = {
 					return true;
 				}
 			}
-			if (ticker == "eth") {
+			if (ticker == "eth" || ticker == "erc20") {
 				if (req.body.token == process.env.ETH_TOKEN) {
 					return true;
 				}

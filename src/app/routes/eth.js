@@ -17,7 +17,7 @@ let chain = null;
 if (process.env.ETH_TESTNET == 1) {
   network = "sepolia";
   service = "geth-sepolia:8545";
-  contract = "0x91B333A8485737f9B93327483030f48526FaDc22"; // testnet erc20 token
+  contract = "0x8964C0EFFB160041bdF9D0385d6a42f48Ce3Ef4f"; // testnet erc20 token
   decimals = 1e18;
   chain = Chain.Sepolia;
 }
@@ -46,8 +46,6 @@ async function createTx(addressFrom, addressTo, valueInEther, privKey, memo) {
       'value': web3.utils.numberToHex(web3.utils.toWei(valueInEther.toString(), 'ether')),
       'type': 2,
   };
-  console.log(web3.utils.numberToHex(gasPrice))
-  console.log(txObject);
   if (memo) {
     txObject.data = web3.utils.utf8ToHex(memo)
   }
@@ -82,6 +80,40 @@ function generateWallet(mnemonic = null, private_key = null) {
   };
   return res;
 }
+
+// async function getHistory(address) {
+//   var provider = 'http://' + service;
+//   var web3 = new Web3(new Web3.providers.HttpProvider(provider))
+//   var currentBlock = await web3.eth.getBlockNumber();
+//   var n = await web3.eth.getTransactionCount(address, currentBlock);
+//   var bal = await web3.eth.getBalance(address, currentBlock);
+//   console.log(bal);
+//   console.log(n);
+//   console.log(currentBlock);
+
+//   for (var i=currentBlock; i >= 0 && (n > 0 || bal > 0); --i) {
+//       try {
+//           var block = await web3.eth.getBlock(i, true);
+//           // console.log(i);
+//           // console.log(block);
+//           if (block && block.transactions) {
+//               block.transactions.forEach(function(e) {
+//                   if (address == e.from) {
+//                       if (e.from != e.to)
+//                           bal = bal.plus(e.value);
+//                       console.log(i, e.from, e.to, e.value.toString(10));
+//                       --n;
+//                   }
+//                   if (address == e.to) {
+//                       if (e.from != e.to)
+//                           bal = bal.minus(e.value);
+//                       console.log(i, e.from, e.to, e.value.toString(10));
+//                   }
+//               });
+//           }
+//       } catch (e) { console.error("Error in block " + i, e); }
+//   }
+// }
 
 router.post('/api/get/status/eth', async (req, res) => {
   let result = await utils.sendRpcEth("eth_syncing", [], service);
@@ -225,7 +257,7 @@ router.post('/api/send/eth', async (req, res) => {
     }
     return res.send({ 
       status: 'done', 
-      result: result
+      txHash: result.result
     });
   }
   return utils.badRequest(res);
@@ -279,13 +311,13 @@ router.post('/api/get/history/eth', async (req, res) => {
     }
     let address = await Eth.getByName(wallet.name);
     address = address[0].address;
+    // result = await getHistory(address);
     
-    address = "0xF29A6c0f8eE500dC87d0d4EB8B26a6faC7A76767" // test
 
     return res.send({ 
       status: 'done', 
       name: name,
-      result: result
+      // result: result
     });
   }
   return utils.badRequest(res);
