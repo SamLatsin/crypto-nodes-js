@@ -74,6 +74,15 @@ module.exports = {
 			return error;
 		}
 	},
+	sendGet: async function(url, params, headers) {
+		try {
+			const res = await axios.get(url, {params: params, headers: headers});
+			return res.data; 
+		}
+		catch (error) {
+			return error;
+		}
+	},
 	getNumbers: function(str) {
 		return str.match(/\d+/);
 	},

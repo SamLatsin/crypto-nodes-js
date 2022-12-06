@@ -14,12 +14,14 @@ let service = "";
 let contract = "";
 let decimals = 0;
 let chain = null;
+let etherscan_api_url = "";
 if (process.env.ETH_TESTNET == 1) {
   network = "sepolia";
   service = "geth-sepolia:8545";
   contract = "0x8964C0EFFB160041bdF9D0385d6a42f48Ce3Ef4f"; // testnet erc20 token
   decimals = 1e18;
   chain = Chain.Sepolia;
+  etherscan_api_url = "https://api-sepolia.etherscan.io/api";
 }
 else {
   network = "mainnet";
@@ -27,6 +29,7 @@ else {
   contract = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
   decimals = 1e6;
   chain = Chain.Mainnet;
+  etherscan_api_url = "https://api.etherscan.io/api";
 }
 
 async function getContractFee(toAddress, amount) {
@@ -157,7 +160,46 @@ router.post('/api/send/erc20', async (req, res) => {
 });
 
 router.post('/api/get/history/erc20', async (req, res) => {
-  
+  const name = req.body.name;
+  const token = req.body.walletToken;
+  let wallet = await Wallet.getByTickerAndName('eth', name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != token) {
+      return utils.badToken(res);
+    }
+    let address = await Eth.getByName(wallet.name);
+    address = address[0].address;
+    const headers = {
+      'Accept': 'application/json',
+      'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
+      'Accept-Encoding': 'application/json'
+    };
+    const params = {
+      'module': 'account',
+      'action': 'tokentx',
+      'address': address,
+      'startblock': '0',
+      'endblock': '99999999',
+      'sort': 'asc',
+      'apikey': process.env.ETHERSCAN_API_KEY
+    };
+    const response = await utils.sendGet(etherscan_api_url, params, headers);
+    let result = [];
+    if (response.status == 1) {
+      for (let [key, transaction] of Object.entries(response.result)) {
+        transaction.value = parseFloat(transaction.value) / decimals;
+        transaction.fee =  parseFloat(transaction.gas) * parseFloat(transaction.gasPrice) / decimals;
+        transaction.gasPrice = parseFloat(transaction.gasPrice) / decimals;
+        result.push(transaction);
+      }
+    }
+    return res.send({ 
+      status: 'done', 
+      result: result
+    });
+  }
+  return utils.badRequest(res);
 });
 
 module.exports = router;

@@ -14,12 +14,14 @@ let service = "";
 let contract = "";
 let decimals = 0;
 let chain = null;
+let etherscan_api_url = "";
 if (process.env.ETH_TESTNET == 1) {
   network = "sepolia";
   service = "geth-sepolia:8545";
   contract = "0x8964C0EFFB160041bdF9D0385d6a42f48Ce3Ef4f"; // testnet erc20 token
   decimals = 1e18;
   chain = Chain.Sepolia;
+  etherscan_api_url = "https://api-sepolia.etherscan.io/api";
 }
 else {
   network = "mainnet";
@@ -27,6 +29,7 @@ else {
   contract = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
   decimals = 1e6;
   chain = Chain.Mainnet;
+  etherscan_api_url = "https://api.etherscan.io/api";
 }
 
 async function createTx(addressFrom, addressTo, valueInEther, privKey, memo) {
@@ -80,40 +83,6 @@ function generateWallet(mnemonic = null, private_key = null) {
   };
   return res;
 }
-
-// async function getHistory(address) {
-//   let provider = 'http://' + service;
-//   let web3 = new Web3(new Web3.providers.HttpProvider(provider))
-//   let currentBlock = await web3.eth.getBlockNumber();
-//   let n = await web3.eth.getTransactionCount(address, currentBlock);
-//   let bal = await web3.eth.getBalance(address, currentBlock);
-//   console.log(bal);
-//   console.log(n);
-//   console.log(currentBlock);
-
-//   for (let i=currentBlock; i >= 0 && (n > 0 || bal > 0); --i) {
-//       try {
-//           let block = await web3.eth.getBlock(i, true);
-//           // console.log(i);
-//           // console.log(block);
-//           if (block && block.transactions) {
-//               block.transactions.forEach(function(e) {
-//                   if (address == e.from) {
-//                       if (e.from != e.to)
-//                           bal = bal.plus(e.value);
-//                       console.log(i, e.from, e.to, e.value.toString(10));
-//                       --n;
-//                   }
-//                   if (address == e.to) {
-//                       if (e.from != e.to)
-//                           bal = bal.minus(e.value);
-//                       console.log(i, e.from, e.to, e.value.toString(10));
-//                   }
-//               });
-//           }
-//       } catch (e) { console.error("Error in block " + i, e); }
-//   }
-// }
 
 router.post('/api/get/status/eth', async (req, res) => {
   let result = await utils.sendRpcEth("eth_syncing", [], service);
@@ -311,13 +280,33 @@ router.post('/api/get/history/eth', async (req, res) => {
     }
     let address = await Eth.getByName(wallet.name);
     address = address[0].address;
-    // result = await getHistory(address);
-    
-
+    const headers = {
+      'Accept': 'application/json',
+      'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
+      'Accept-Encoding': 'application/json'
+    };
+    const params = {
+      'module': 'account',
+      'action': 'txlist',
+      'address': address,
+      'startblock': '0',
+      'endblock': '99999999',
+      'sort': 'asc',
+      'apikey': process.env.ETHERSCAN_API_KEY
+    };
+    const response = await utils.sendGet(etherscan_api_url, params, headers);
+    let result = [];
+    if (response.status == 1) {
+      for (let [key, transaction] of Object.entries(response.result)) {
+        transaction.value = parseFloat(transaction.value) / 1e18;
+        transaction.fee =  parseFloat(transaction.gas) * parseFloat(transaction.gasPrice) / 1e18;
+        transaction.gasPrice = parseFloat(transaction.gasPrice) / 1e18;
+        result.push(transaction);
+      }
+    }
     return res.send({ 
       status: 'done', 
-      name: name,
-      // result: result
+      result: result
     });
   }
   return utils.badRequest(res);
