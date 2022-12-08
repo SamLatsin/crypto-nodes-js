@@ -44,6 +44,12 @@ if (process.env.ETH_ENABLED == 1) {
   app.use('/', ethRouter);
   app.use('/', erc20Router);
 }
+if (process.env.TRX_ENABLED == 1) {
+  const trxRouter = require('./routes/trx');
+  const trc20Router = require('./routes/trc20');
+  app.use('/', trxRouter);
+  app.use('/', trc20Router);
+}
 
 app.use('/', cronRouter);
 

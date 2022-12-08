@@ -161,7 +161,6 @@ router.post('/api/get/balance/eth', async (req, res) => {
     address = address[0].address;
     let args = [address, "latest"];
     let result = await utils.sendRpcEth("eth_getBalance", args, service);
-    console.log(result);
     const balance = parseFloat(Number(result.result)) / 1e18;
     address = address.substring(2);
     data = "0x70a08231" + address.padStart(64, 0); // balanceOf(address)
