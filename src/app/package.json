@@ -24,7 +24,10 @@
     "ethereum-hdwallet": "^0.1.2",
     "bip39": "^3.0.4",
     "@ethereumjs/tx": "^4.0.1",
-    "web3": "^1.8.1"
+    "web3": "^1.8.1",
+    "tronweb": "^4.4.0",
+    "trongrid": "^1.2.6",
+    "tron-wallet-hd": "^2.0.2"
   },
   "devDependencies": {
     "eslint": "^5.16.0",

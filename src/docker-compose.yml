@@ -128,78 +128,90 @@ services:
     env_file:
       - .env
 
-  bitcoin:
-    container_name: bitcoin
-    image: kylemanna/bitcoind:latest
+  tron:
+    container_name: tron
+    image: tronprotocol/java-tron:latest
     restart: on-failure
     volumes:
-      - ./bitcoin-data:/bitcoin/.bitcoin
-      - type: bind
-        source: ./notify.sh
-        target: /bin/notify.sh
-      - type: bind
-        source: ./healthcheck.sh
-        target: /bin/healthcheck.sh
-    environment:
-      BTC_TOKEN: ${BTC_TOKEN}
-      BTC_RPC_USER: ${BTC_RPC_USER}
-      BTC_RPC_PASSWORD: ${BTC_RPC_PASSWORD}
-    healthcheck:
-      interval: 10s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-      test: /bin/healthcheck.sh
+      - ./tron-data/output-directory:/java-tron/output-directory
+      - ./tron-data/logs:/java-tron/logs
     command:
-      -printtoconsole=0
-      -rpcuser=${BTC_RPC_USER} 
-      -rpcpassword=${BTC_RPC_PASSWORD}
-      -server
-      -rpcport=8332
-      -txindex=1
-      -dbcache=16000
-      -rpcworkqueue=1000
-      -rpcallowip=0.0.0.0/0
-      -rpcbind=0.0.0.0
-      -testnet=${BTC_TESTNET}
-      -disablewallet=0
-      -"walletnotify=/bin/notify.sh %s %w"
+      --run 
+      --net test
+      # -c /java-tron/config/main_net_config.conf
 
-  geth:
-    container_name: geth
-    image: ethereum/client-go:latest
-    volumes:
-      - ./ethereum-data/geth:/root/.ethereum
-      - type: bind
-        source: ./configs/eth.toml
-        target: /root/config.toml
-    restart: on-failure
-    ports:
-      - 30303:30303
-      - 30304:30304
-    command:
-      --http 
-      --http.api personal,eth,net,web3 
-      --http.port 8545
-      --http.addr 0.0.0.0
-      --http.vhosts *
-      --config "/root/config.toml" 
-      --cache 2048
+  # bitcoin:
+  #   container_name: bitcoin
+  #   image: kylemanna/bitcoind:latest
+  #   restart: on-failure
+  #   volumes:
+  #     - ./bitcoin-data:/bitcoin/.bitcoin
+  #     - type: bind
+  #       source: ./notify.sh
+  #       target: /bin/notify.sh
+  #     - type: bind
+  #       source: ./healthcheck.sh
+  #       target: /bin/healthcheck.sh
+  #   environment:
+  #     BTC_TOKEN: ${BTC_TOKEN}
+  #     BTC_RPC_USER: ${BTC_RPC_USER}
+  #     BTC_RPC_PASSWORD: ${BTC_RPC_PASSWORD}
+  #   healthcheck:
+  #     interval: 10s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 10s
+  #     test: /bin/healthcheck.sh
+  #   command:
+  #     -printtoconsole=0
+  #     -rpcuser=${BTC_RPC_USER} 
+  #     -rpcpassword=${BTC_RPC_PASSWORD}
+  #     -server
+  #     -rpcport=8332
+  #     -txindex=1
+  #     -dbcache=16000
+  #     -rpcworkqueue=1000
+  #     -rpcallowip=0.0.0.0/0
+  #     -rpcbind=0.0.0.0
+  #     -testnet=${BTC_TESTNET}
+  #     -disablewallet=0
+  #     -"walletnotify=/bin/notify.sh %s %w"
 
-  prysm:
-    container_name: prysm
-    image: prysmaticlabs/prysm-beacon-chain:latest
-    volumes:
-      - ./ethereum-data/prysm:/root/prysm-data
-      - ./ethereum-data/geth:/root/geth
-    depends_on:
-      - geth
-    restart: on-failure
-    command:
-      --accept-terms-of-use
-      --execution-endpoint=geth
-      --datadir=/root/prysm-data
-      --execution-endpoint=/root/geth/geth.ipc
+  # geth:
+  #   container_name: geth
+  #   image: ethereum/client-go:latest
+  #   volumes:
+  #     - ./ethereum-data/geth:/root/.ethereum
+  #     - type: bind
+  #       source: ./configs/eth.toml
+  #       target: /root/config.toml
+  #   restart: on-failure
+  #   ports:
+  #     - 30303:30303
+  #     - 30304:30304
+  #   command:
+  #     --http 
+  #     --http.api personal,eth,net,web3 
+  #     --http.port 8545
+  #     --http.addr 0.0.0.0
+  #     --http.vhosts *
+  #     --config "/root/config.toml" 
+  #     --cache 2048
+
+  # prysm:
+  #   container_name: prysm
+  #   image: prysmaticlabs/prysm-beacon-chain:latest
+  #   volumes:
+  #     - ./ethereum-data/prysm:/root/prysm-data
+  #     - ./ethereum-data/geth:/root/geth
+  #   depends_on:
+  #     - geth
+  #   restart: on-failure
+  #   command:
+  #     --accept-terms-of-use
+  #     --execution-endpoint=geth
+  #     --datadir=/root/prysm-data
+  #     --execution-endpoint=/root/geth/geth.ipc
 
   # geth-sepolia:
   #   container_name: geth-sepolia
