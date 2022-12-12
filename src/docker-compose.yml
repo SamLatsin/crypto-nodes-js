@@ -123,22 +123,22 @@ services:
       - ./app/:/usr/src/app
       - /usr/src/app/node_modules
       - ./bitcoin-data:/root/bitcoin-data
-    depends_on:
-      - bitcoin
+  #   depends_on:
+  #     - bitcoin
     env_file:
       - .env
 
-  tron:
-    container_name: tron
-    image: tronprotocol/java-tron:latest
-    restart: on-failure
-    volumes:
-      - ./tron-data/output-directory:/java-tron/output-directory
-      - ./tron-data/logs:/java-tron/logs
-    command:
-      --run 
-      --net test
-      # -c /java-tron/config/main_net_config.conf
+  # tron:
+  #   container_name: tron
+  #   image: tronprotocol/java-tron:latest
+  #   restart: on-failure
+  #   volumes:
+  #     - ./tron-data/output-directory:/java-tron/output-directory
+  #     - ./tron-data/logs:/java-tron/logs
+  #   command:
+  #     --run 
+  #     --net test
+  #     # -c /java-tron/config/main_net_config.conf
 
   # bitcoin:
   #   container_name: bitcoin
@@ -177,41 +177,41 @@ services:
   #     -disablewallet=0
   #     -"walletnotify=/bin/notify.sh %s %w"
 
-  # geth:
-  #   container_name: geth
-  #   image: ethereum/client-go:latest
-  #   volumes:
-  #     - ./ethereum-data/geth:/root/.ethereum
-  #     - type: bind
-  #       source: ./configs/eth.toml
-  #       target: /root/config.toml
-  #   restart: on-failure
-  #   ports:
-  #     - 30303:30303
-  #     - 30304:30304
-  #   command:
-  #     --http 
-  #     --http.api personal,eth,net,web3 
-  #     --http.port 8545
-  #     --http.addr 0.0.0.0
-  #     --http.vhosts *
-  #     --config "/root/config.toml" 
-  #     --cache 2048
+  geth:
+    container_name: geth
+    image: ethereum/client-go:latest
+    volumes:
+      - ./ethereum-data/geth:/root/.ethereum
+      - type: bind
+        source: ./configs/eth.toml
+        target: /root/config.toml
+    restart: on-failure
+    ports:
+      - 30303:30303
+      - 30304:30304
+    command:
+      --http 
+      --http.api personal,eth,net,web3 
+      --http.port 8545
+      --http.addr 0.0.0.0
+      --http.vhosts *
+      --config "/root/config.toml" 
+      --cache 2048
 
-  # prysm:
-  #   container_name: prysm
-  #   image: prysmaticlabs/prysm-beacon-chain:latest
-  #   volumes:
-  #     - ./ethereum-data/prysm:/root/prysm-data
-  #     - ./ethereum-data/geth:/root/geth
-  #   depends_on:
-  #     - geth
-  #   restart: on-failure
-  #   command:
-  #     --accept-terms-of-use
-  #     --execution-endpoint=geth
-  #     --datadir=/root/prysm-data
-  #     --execution-endpoint=/root/geth/geth.ipc
+  prysm:
+    container_name: prysm
+    image: prysmaticlabs/prysm-beacon-chain:latest
+    volumes:
+      - ./ethereum-data/prysm:/root/prysm-data
+      - ./ethereum-data/geth:/root/geth
+    depends_on:
+      - geth
+    restart: on-failure
+    command:
+      --accept-terms-of-use
+      --execution-endpoint=geth
+      --datadir=/root/prysm-data
+      --execution-endpoint=/root/geth/geth.ipc
 
   # geth-sepolia:
   #   container_name: geth-sepolia

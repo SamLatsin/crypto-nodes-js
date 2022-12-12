@@ -311,6 +311,14 @@ router.post('/api/get/history/eth', async (req, res) => {
   return utils.badRequest(res);
 });
 
+router.post('/api/get/wallets/eth', async (req, res) => {
+  const wallets = await Wallet.getByTicker('eth');
+  return res.send({ 
+    status: 'done',
+    result: wallets
+  });
+});
+
 // router.post('/api/test/eth', async (req, res) => {
 //   const name = req.body.name;
 //   return res.send({ 
@@ -318,7 +326,5 @@ router.post('/api/get/history/eth', async (req, res) => {
 //     name: name
 //   });
 // });
-
-
 
 module.exports = router;

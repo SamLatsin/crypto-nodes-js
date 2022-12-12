@@ -1,31 +1,7 @@
 const db = require('../middleware/db').getDb();
-const model = "wallets";
+const model = "trx_contracts_erc20";
 
-let Wallet = {
-	getAll: async function() {
-		let query = "SELECT * FROM " + model;
-		const res = await db
-	    .query(query)
-	    .then((payload) => {
-	      return payload.rows;
-	    })
-	    .catch(() => {
-	    	return false;
-	    });
-	    return res;
-	},
-	getLastByTicker: async function(ticker) {
-		let query = "SELECT * FROM " + model + " WHERE ticker=$1 ORDER BY id DESC LIMIT 1";
-		const res = await db
-	    .query(query, [ticker])
-	    .then((payload) => {
-	      return payload.rows;
-	    })
-	    .catch(() => {
-	    	return false;
-	    });
-		return res;
-	},
+let Trx_contract_erc20 = {
 	insert: async function(fields) {
 		let query = "INSERT INTO " + model;
 		let keys = [];
@@ -42,7 +18,7 @@ let Wallet = {
 		values = values.join(", ");
 		query = query + " (" + keys + ") VALUES (" + values + ") RETURNING id";
 		query = {
-			name: "insert wallet " + fields.name,
+			name: "insert trx contract erc20 " + fields.name + fields.address,
 			text: query,
 			values: data
 		};
@@ -69,7 +45,7 @@ let Wallet = {
 		values = values.join(", ");
 		query = query + values + " WHERE id=" + id;
 		query = {
-			name: "update wallet " + id,
+			name: "update trx contract erc20 " + id,
 			text: query,
 			values: data
 		};
@@ -86,7 +62,7 @@ let Wallet = {
 	delete: async function(id) {
 		let query = "DELETE FROM " + model + " WHERE id=$1";
 		query = {
-			name: "delete btc " + id,
+			name: "delete trx contract erc20 " + id,
 			text: query,
 			values: [id]
 		};
@@ -100,35 +76,15 @@ let Wallet = {
 	    });
 		return res;
 	},
-	getByTickerAndName: async function(ticker, name) {
-		let query = "SELECT * FROM " + model + " WHERE ticker=$1 AND name=$2";
+	deleteByTicker: async function(ticker) {
+		let query = "DELETE FROM " + model + " WHERE ticker=$1";
+		query = {
+			name: "delete trx contract erc20 by ticker " + ticker,
+			text: query,
+			values: [ticker]
+		};
 		const res = await db
-	    .query(query, [ticker, name])
-	    .then((payload) => {
-	      return payload.rows;
-	    })
-	    .catch(() => {
-	    	return false;
-	    });
-		return res;
-	},
-	getByTickerAndKey: async function(ticker, private_key) {
-		let query = 'SELECT * FROM ' + model + ' WHERE ticker=$1 AND "privateKey"=$2';
-		const res = await db
-	    .query(query, [ticker, private_key])
-	    .then((payload) => {
-	      return payload.rows;
-	    })
-	    .catch(() => {
-	    	return false;
-	    });
-		return res;
-	},
-	getImported: async function(ticker) {
-		let query = "SELECT * FROM " + model + " WHERE ticker=$1 AND name LIKE $2 ORDER BY id ASC";
-		console.log(query);
-		const res = await db
-	    .query(query, [ticker, 'frw%'])
+	    .query(query)
 	    .then((payload) => {
 	      return payload.rows;
 	    })
@@ -138,7 +94,7 @@ let Wallet = {
 		return res;
 	},
 	getByTicker: async function(ticker) {
-		let query = 'SELECT name,"walletToken",date FROM ' + model + ' WHERE ticker=$1 ORDER BY id ASC';
+		let query = "SELECT * FROM " + model + " WHERE ticker=$1 ORDER BY id DESC";
 		const res = await db
 	    .query(query, [ticker])
 	    .then((payload) => {
@@ -148,6 +104,30 @@ let Wallet = {
 	    	return false;
 	    });
 		return res;
+	},
+	getByAddress: async function(address) {
+		let query = "SELECT * FROM " + model + " WHERE address=$1 ORDER BY id DESC";
+		const res = await db
+	    .query(query, [address])
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
+	getAll: async function() {
+		let query = "SELECT * FROM " + model + " ORDER BY id ASC";
+		const res = await db
+	    .query(query)
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
 	}
 }
-module.exports = Wallet;
+module.exports = Trx_contract_erc20;

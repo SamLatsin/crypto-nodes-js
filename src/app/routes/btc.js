@@ -1164,6 +1164,14 @@ router.post('/api/send_raw/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
+router.post('/api/get/wallets/btc', async (req, res) => {
+  const wallets = await Wallet.getByTicker('btc');
+  return res.send({ 
+    status: 'done',
+    result: wallets
+  });
+});
+
 // router.post('/api/test/btc', async (req, res) => {
 //   const name = req.body.name;
 //   const result = await utils.sendRpc("-getinfo", [], "bitcoin:8332/");

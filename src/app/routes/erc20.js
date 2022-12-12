@@ -2,6 +2,7 @@ const express = require('express');
 const utils = require('../middleware/utils');
 const Wallet = require('../classes/wallet.class');
 const Eth = require('../classes/eth.class');
+const Erc20Contract = require('../classes/eth_contract_erc20.class');
 const Web3 = require('web3')
 const ethTx = require('@ethereumjs/tx').Transaction
 const Chain = require('@ethereumjs/common').Chain;
@@ -85,11 +86,17 @@ async function createContract(addressFrom, addressTo, valueInEther, privKey) {
 router.post('/api/get/balance/erc20', async (req, res) => {
   const name = req.body.name;
   const token = req.body.walletToken;
+  const ticker = req.body.ticker;
   let wallet = await Wallet.getByTickerAndName('eth', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
     if (wallet.walletToken != token) {
       return utils.badToken(res);
+    }
+    const erc20contract = await Erc20Contract.getByTicker(ticker);
+    if (erc20contract && erc20contract.length > 0) {
+      contract = erc20contract[0].address;
+      decimals = erc20contract[0].decimals;
     }
     let address = await Eth.getByName(wallet.name);
     address = address[0].address;
@@ -115,11 +122,17 @@ router.post('/api/get/fee/erc20', async (req, res) => {
   const token = req.body.walletToken;
   const amount = req.body.amount;
   const to_address = req.body.address;
+  const ticker = req.body.ticker;
   let wallet = await Wallet.getByTickerAndName('eth', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
     if (wallet.walletToken != token) {
       return utils.badToken(res);
+    }
+    const erc20contract = await Erc20Contract.getByTicker(ticker);
+    if (erc20contract && erc20contract.length > 0) {
+      contract = erc20contract[0].address;
+      decimals = erc20contract[0].decimals;
     }
     let result = await getContractFee(to_address, amount);
     return res.send({ 
@@ -135,11 +148,17 @@ router.post('/api/send/erc20', async (req, res) => {
   const token = req.body.walletToken;
   const amount = req.body.amount;
   const to_address = req.body.address;
+  const ticker = req.body.ticker;
   let wallet = await Wallet.getByTickerAndName('eth', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
     if (wallet.walletToken != token) {
       return utils.badToken(res);
+    }
+    const erc20contract = await Erc20Contract.getByTicker(ticker);
+    if (erc20contract && erc20contract.length > 0) {
+      contract = erc20contract[0].address;
+      decimals = erc20contract[0].decimals;
     }
     let from_address = await Eth.getByName(wallet.name);
     from_address = from_address[0].address;
@@ -162,23 +181,30 @@ router.post('/api/send/erc20', async (req, res) => {
 router.post('/api/get/history/erc20', async (req, res) => {
   const name = req.body.name;
   const token = req.body.walletToken;
+  const ticker = req.body.ticker;
   let wallet = await Wallet.getByTickerAndName('eth', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
     if (wallet.walletToken != token) {
       return utils.badToken(res);
     }
+    const erc20contract = await Erc20Contract.getByTicker(ticker);
+    if (erc20contract && erc20contract.length > 0) {
+      contract = erc20contract[0].address;
+      decimals = erc20contract[0].decimals;
+    }
     let address = await Eth.getByName(wallet.name);
     address = address[0].address;
     const headers = {
-      'Accept': 'application/json',
+      // 'Accept': 'application/json',
       'Accept-Language': 'ru-RU,ru;q=0.8,en-US;q=0.5,en;q=0.3',
-      'Accept-Encoding': 'application/json'
+      // 'Accept-Encoding': 'application/json'
     };
     const params = {
       'module': 'account',
       'action': 'tokentx',
       'address': address,
+      'contractaddress': contract,
       'startblock': '0',
       'endblock': '99999999',
       'sort': 'asc',
@@ -188,18 +214,62 @@ router.post('/api/get/history/erc20', async (req, res) => {
     let result = [];
     if (response.status == 1) {
       for (let [key, transaction] of Object.entries(response.result)) {
-        transaction.value = parseFloat(transaction.value) / decimals;
-        transaction.fee =  parseFloat(transaction.gas) * parseFloat(transaction.gasPrice) / decimals;
-        transaction.gasPrice = parseFloat(transaction.gasPrice) / decimals;
+        transaction.value = parseFloat(transaction.value) / parseFloat(10**transaction.tokenDecimal);
+        transaction.fee =  parseFloat(transaction.gasUsed) * parseFloat(transaction.gasPrice) / 1e18;
+        transaction.gasPrice = parseFloat(transaction.gasPrice) / 1e18;
         result.push(transaction);
       }
     }
     return res.send({ 
       status: 'done', 
-      result: result
+      result: result,
     });
   }
   return utils.badRequest(res);
+});
+
+router.post('/api/add/contract/erc20', async (req, res) => {
+  const ticker = req.body.ticker;
+  const address = req.body.address;
+  const is_exists = await Erc20Contract.getByTicker(ticker);
+  if (is_exists && is_exists.length > 0) {
+    return res.status(400).send({ 
+      status: 'error',
+      error: 'ticker already exists'
+    });
+  }
+  const args = {
+    to: address,
+    data: "0x313ce567" // 'decimals()' in keccak-256 hash
+  };
+  let decimals = await utils.sendRpcEth("eth_call", [args, "latest"], service);
+  decimals = 10**parseInt(decimals.result);
+  const fields = {
+    ticker: ticker,
+    address: address,
+    decimals: decimals
+  };
+  await Erc20Contract.insert(fields);
+  return res.send({ 
+    status: 'done',
+  });
+});
+
+router.post('/api/delete/contract/erc20', async (req, res) => {
+  const ticker = req.body.ticker;
+  await Erc20Contract.deleteByTicker(ticker);
+  return res.send({ 
+    status: 'done',
+  });
+});
+
+router.post('/api/get/contracts/erc20', async (req, res) => {
+  const ticker = req.body.ticker;
+  const contracts = await Erc20Contract.getAll();
+  return res.send({ 
+    status: 'done',
+    result: contracts
+  });
 });
 
 module.exports = router;

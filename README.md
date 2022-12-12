@@ -33,7 +33,7 @@ Bitcoin special features:
 * Raw transactions with multiple inputs/outputs support
 
 Ethereum special feature:
-* Support for ERC20 USDT tokens
+* Support for ERC20 tokens (add, delete, get)
 
 <!-- Tron special feature:
 * Support for TRC20 USDT tokens -->
