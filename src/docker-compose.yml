@@ -137,14 +137,19 @@ services:
       - ./tron-data/logs:/java-tron/logs
       - type: bind
         source: ./configs/tron-testnet.conf
-        target: /java-tron/config.toml
+        target: /java-tron/config.conf
+      - type: bind
+        source: ./configs/logback.xml
+        target: /java-tron/logback.xml
     command:
       - "-d"
       - "/java-tron/output-directory"
       - "-jvm"
       - "{-Xmx28g -Xms28g}"
       - "-c"
-      - "/java-tron/config.toml"
+      - "/java-tron/config.conf"
+      - "--log-config"
+      - "/java-tron/logback.xml"
 
   # bitcoin:
   #   container_name: bitcoin

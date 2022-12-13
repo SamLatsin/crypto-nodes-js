@@ -7,14 +7,40 @@ const router = express.Router();
 
 const service = "http://tron:8090";
 const tronWeb = new TronWeb({
-        fullHost: service,
+  fullHost: service,
 });
 
+let contract = "";
+let decimals = 0;
 if (process.env.TRX_TESTNET == 1) {
-  
+  contract = ""; // my test token
+  decimals = 1e18;
 }
 else {
-  
+  contract = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
+  decimals = 1e6;
+}
+
+async function generateWallet(mnemonic = null, private_key = null) {
+  const hdWallet = require("tron-wallet-hd");
+  const hdUtils = hdWallet.utils;
+  if (!mnemonic) {
+    mnemonic = hdUtils.generateMnemonic();
+  }
+  if (!private_key) {
+    account = await hdUtils.getAccountAtIndex(mnemonic,1);
+    private_key = account.privateKey;
+    address = account.address;
+  }
+  else {
+    address = await hdUtils.getAccountFromPrivateKey(private_key);
+  }
+  const res = {
+      "mnemonic": mnemonic,
+      "privateKey": private_key,
+      "address": address
+    };
+  return res;
 }
 
 router.post('/api/get/status/trx', async (req, res) => {
@@ -33,6 +59,7 @@ router.post('/api/create/wallet/trx', async (req, res) => {
   else {
     name = 'w1';
   }
+  data = await generateWallet();
   const wallet_token = utils.generateUUID();
   let fields = {
     ticker: 'trx',
@@ -195,6 +222,14 @@ router.post('/api/get/history/trx', async (req, res) => {
     
   }
   return utils.badRequest(res);
+});
+
+router.post('/api/get/wallets/trx', async (req, res) => {
+  const wallets = await Wallet.getByTicker('trx');
+  return res.send({ 
+    status: 'done',
+    result: wallets
+  });
 });
 
 module.exports = router;
