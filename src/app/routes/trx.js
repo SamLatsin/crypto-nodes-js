@@ -5,15 +5,14 @@ const Trx = require('../classes/trx.class');
 const TronWeb = require('tronweb')
 const router = express.Router();
 
-const service = "http://tron:8090";
-const tronWeb = new TronWeb({
-  fullHost: service,
-});
+const fullNode = "http://tron:8090";
+const solidityNode = "http://tron:8091";
+const tronWeb = new TronWeb(fullNode, solidityNode);
 
 let contract = "";
 let decimals = 0;
 if (process.env.TRX_TESTNET == 1) {
-  contract = ""; // my test token
+  contract = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"; // my test token
   decimals = 1e18;
 }
 else {
@@ -112,11 +111,25 @@ router.post('/api/get/balance/trx', async (req, res) => {
     }
     let address = await Trx.getByName(wallet.name);
     address = address[0].address;
-    
+    let balance = await tronWeb.trx.getBalance(address);
+    balance = balance / 1e6;
+    const contractObj = await tronWeb.contract().at(contract);
+    tronWeb.setAddress(contract);
+    let tokens = await contractObj.balanceOf(address).call();
+    if (tokens._isBigNumber) {
+      tokens = tokens._hex;
+      tokens = tronWeb.toBigNumber(tokens);
+      tokens = tokens.toNumber();
+      tokens = parseFloat(tokens) / decimals;
+    }
+    else {
+      tokens = 0;
+    }
     return res.send({ 
       status: 'done', 
       name: name,
-      balance: balance
+      balance: balance,
+      tokens: tokens
     });
   }
   return utils.badRequest(res);
@@ -133,7 +146,16 @@ router.post('/api/get/fee/trx', async (req, res) => {
     if (wallet.walletToken != token) {
       return utils.badToken(res);
     }
-
+    let address = await Trx.getByName(wallet.name);
+    address = address[0].address;
+    const transaction = await tronWeb.transactionBuilder.sendTrx(to_address, parseInt(amount*1e6), address);
+    const signedTransaction = await tronWeb.trx.sign(transaction, wallet.privateKey);
+    const result = await tronWeb.trx.getBandwidth(address);
+    let bandwidth = signedTransaction.raw_data_hex.length;
+    let fee = 0;
+    if (parseInt(result) < parseInt(bandwidth)) {
+      fee = parseFloat(bandwidth) / 1e3;
+    }
     return res.send({ 
       status: 'done', 
       result: fee.toFixed(8)
