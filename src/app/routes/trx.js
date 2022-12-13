@@ -2,7 +2,13 @@ const express = require('express');
 const utils = require('../middleware/utils');
 const Wallet = require('../classes/wallet.class');
 const Trx = require('../classes/trx.class');
+const TronWeb = require('tronweb')
 const router = express.Router();
+
+const service = "http://tron:8090";
+const tronWeb = new TronWeb({
+        fullHost: service,
+});
 
 if (process.env.TRX_TESTNET == 1) {
   
@@ -12,15 +18,10 @@ else {
 }
 
 router.post('/api/get/status/trx', async (req, res) => {
-  if ("result" in result) {
-    return res.send({ 
-      status: 'done', 
-      result: result,
-    });
-  }
-  return res.status(400).send({ 
-    status: 'error', 
-    result: 'service not running',
+  let result = await tronWeb.trx.getNodeInfo();
+  return res.send({ 
+    status: 'done', 
+    result: result
   });
 });
 

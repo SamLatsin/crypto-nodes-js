@@ -15,6 +15,11 @@ module.exports = {
 					return true;
 				}
 			}
+			if (ticker == "trx" || ticker == "trc20") {
+				if (req.body.token == process.env.TRX_TOKEN) {
+					return true;
+				}
+			}
 			return false;
 		}
 		return true;
