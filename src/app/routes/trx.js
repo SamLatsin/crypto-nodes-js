@@ -2,23 +2,27 @@ const express = require('express');
 const utils = require('../middleware/utils');
 const Wallet = require('../classes/wallet.class');
 const Trx = require('../classes/trx.class');
-const TronWeb = require('tronweb')
+const TronWeb = require('tronweb');
+const TronGrid = require("trongrid");
 const router = express.Router();
-
-const fullNode = "http://tron:8090";
-const solidityNode = "http://tron:8091";
-const tronWeb = new TronWeb(fullNode, solidityNode);
 
 let contract = "";
 let decimals = 0;
+let eventServer = "";
 if (process.env.TRX_TESTNET == 1) {
-  contract = "TXYZopYRdj2D9XRtbG411XZZ3kM5VkAeBf"; // my test token
-  decimals = 1e18;
+  contract = "TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj"; // my test token
+  decimals = 1e6;
+  eventServer = 'http://nile.trongrid.io';
 }
 else {
   contract = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
   decimals = 1e6;
+  eventServer = 'http://api.trongrid.io';
 }
+
+const fullNode = "http://tron:8090";
+const solidityNode = "http://tron:8091";
+const tronWeb = new TronWeb(fullNode, solidityNode, eventServer);
 
 async function generateWallet(mnemonic = null, private_key = null) {
   const hdWallet = require("tron-wallet-hd");
@@ -153,6 +157,7 @@ router.post('/api/get/fee/trx', async (req, res) => {
   const token = req.body.walletToken;
   const amount = req.body.amount;
   const to_address = req.body.address;
+  const memo = req.body.memo;
   let wallet = await Wallet.getByTickerAndName('trx', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
@@ -179,9 +184,12 @@ router.post('/api/get/fee/trx', async (req, res) => {
     if (parseInt(address_bandwidth) < parseInt(tx_bandwidth)) {
       fee = parseFloat(tx_bandwidth) / 1e3;
     }
+    if (memo) {
+      fee = fee + 1;
+    }
     return res.send({ 
       status: 'done', 
-      result: fee.toFixed(8)
+      result: parseFloat(fee.toFixed(8))
     });
   }
   return utils.badRequest(res);
@@ -213,7 +221,7 @@ router.post('/api/send/trx', async (req, res) => {
     }
     return res.send({ 
       status: 'done', 
-      txid: result
+      txid: result.txid
     });
   }
   return utils.badRequest(res);
@@ -267,7 +275,39 @@ router.post('/api/get/history/trx', async (req, res) => {
     }
     let address = await Trx.getByName(wallet.name);
     address = address[0].address;
-    
+    const tronGrid = new TronGrid(tronWeb);
+    const options = {
+        // onlyTo: true,
+        // onlyConfirmed: true,
+        limit: 200,
+        orderBy: 'timestamp,asc',
+        // minBlockTimestamp: Date.now() - 60000 // from a minute ago to go on
+    };
+    let transactions = await tronGrid.account.getTransactions(address, options);
+    transactions = transactions.data;
+    for (let [key, transaction] of Object.entries(transactions)) {
+      // if (transaction.raw_data.contract[0].type == "TriggerSmartContract" || transaction.raw_data.contract[0].type == "CreateSmartContract") {
+      //   transactions.splice(key, 1);
+      // }
+      let toConvert = transactions[key].raw_data.contract[0].parameter.value.owner_address;
+      transactions[key].raw_data.contract[0].parameter.value.owner_address = TronWeb.address.fromHex(toConvert);
+      toConvert = transactions[key].raw_data.contract[0].parameter.value.to_address;
+      transactions[key].raw_data.contract[0].parameter.value.to_address = TronWeb.address.fromHex(toConvert);
+      if ("ret" in transaction) {
+        transactions[key].ret[0].fee = parseFloat(transaction.ret[0].fee / 1e6);
+      }
+      if ("raw_data" in transaction) {
+        if ("data" in transaction.raw_data) {
+          transactions[key].raw_data.data = TronWeb.toAscii(transaction.raw_data.data);
+        }
+        transactions[key].raw_data.contract[0].parameter.value.amount = parseFloat(transaction.raw_data.contract[0].parameter.value.amount) / 1e6;
+      }
+      transactions[key].net_fee = parseFloat(transaction.net_fee) / 1e6;
+    }
+    return res.send({ 
+      status: 'done', 
+      result: transactions
+    });
   }
   return utils.badRequest(res);
 });
@@ -280,12 +320,12 @@ router.post('/api/get/wallets/trx', async (req, res) => {
   });
 });
 
-router.post('/api/test/trx', async (req, res) => {
-  result = await tronWeb.trx.getCurrentBlock();
-  return res.send({ 
-    status: 'done',
-    result: result
-  });
-});
+// router.post('/api/test/trx', async (req, res) => {
+//   let result = await tronWeb.trx.getCurrentBlock();
+//   return res.send({ 
+//     status: 'done',
+//     result: result
+//   });
+// });
 
 module.exports = router;
