@@ -146,15 +146,25 @@ router.post('/api/get/fee/trx', async (req, res) => {
     if (wallet.walletToken != token) {
       return utils.badToken(res);
     }
-    let address = await Trx.getByName(wallet.name);
-    address = address[0].address;
-    const transaction = await tronWeb.transactionBuilder.sendTrx(to_address, parseInt(amount*1e6), address);
-    const signedTransaction = await tronWeb.trx.sign(transaction, wallet.privateKey);
-    const result = await tronWeb.trx.getBandwidth(address);
-    let bandwidth = signedTransaction.raw_data_hex.length;
+    let from_address = await Trx.getByName(wallet.name);
+    from_address = from_address[0].address;
+    let tx_bandwidth = 0;
+    let address_bandwidth = 0;
+    try {
+      const transaction = await tronWeb.transactionBuilder.sendTrx(to_address, parseInt(amount*1e6), from_address);
+      const signedTransaction = await tronWeb.trx.sign(transaction, wallet.privateKey);
+      address_bandwidth = await tronWeb.trx.getBandwidth(from_address);
+      let tx_bandwidth = signedTransaction.raw_data_hex.length;
+    }
+    catch (error) {
+      return res.status(400).send({ 
+        status: 'error', 
+        error: 'insufficient funds'
+      });
+    }
     let fee = 0;
-    if (parseInt(result) < parseInt(bandwidth)) {
-      fee = parseFloat(bandwidth) / 1e3;
+    if (parseInt(address_bandwidth) < parseInt(tx_bandwidth)) {
+      fee = parseFloat(tx_bandwidth) / 1e3;
     }
     return res.send({ 
       status: 'done', 
@@ -251,6 +261,14 @@ router.post('/api/get/wallets/trx', async (req, res) => {
   return res.send({ 
     status: 'done',
     result: wallets
+  });
+});
+
+router.post('/api/test/trx', async (req, res) => {
+  result = await tronWeb.trx.getCurrentBlock();
+  return res.send({ 
+    status: 'done',
+    result: result
   });
 });
 

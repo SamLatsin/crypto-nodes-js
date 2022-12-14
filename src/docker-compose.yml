@@ -141,11 +141,14 @@ services:
       - type: bind
         source: ./configs/logback.xml
         target: /java-tron/logback.xml
+    ports:
+      - 18888:18888
+      - 50051:50051
     command:
       - "-d"
       - "/java-tron/output-directory"
       - "-jvm"
-      - "{-Xmx28g -Xms28g}"
+      - "{-Xmx31g -Xms31g -XX:+UseConcMarkSweepGC}"
       - "-c"
       - "/java-tron/config.conf"
       - "--log-config"
