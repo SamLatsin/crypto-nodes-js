@@ -35,11 +35,24 @@ async function generateWallet(mnemonic = null, private_key = null) {
     address = await hdUtils.getAccountFromPrivateKey(private_key);
   }
   const res = {
-      "mnemonic": mnemonic,
-      "privateKey": private_key,
-      "address": address
-    };
+    "mnemonic": mnemonic,
+    "privateKey": private_key,
+    "address": address
+  };
   return res;
+}
+
+async function createTx(addressFrom, addressTo, amount, privKey, memo) {
+  const transaction = await tronWeb.transactionBuilder.sendTrx(addressTo, amount, addressFrom)
+  if (memo && memo.length > 0) {
+    const memo_transaction = await tronWeb.transactionBuilder.addUpdateData(transaction, String(memo));
+    const signedTransaction = await tronWeb.trx.sign(memo_transaction, privKey);
+    const result = await tronWeb.trx.sendRawTransaction(signedTransaction);
+    return result;
+  }
+  const signedTransaction = await tronWeb.trx.sign(transaction, privKey);
+  const result = await tronWeb.trx.sendRawTransaction(signedTransaction);
+  return result;
 }
 
 router.post('/api/get/status/trx', async (req, res) => {
@@ -188,16 +201,19 @@ router.post('/api/send/trx', async (req, res) => {
     }
     let from_address = await Trx.getByName(wallet.name);
     from_address = from_address[0].address;
-
-    if ("error" in result) {
+    let result = null;
+    try {
+      result = await createTx(from_address, to_address, parseInt(amount*1e6), wallet.privateKey, memo);
+    }
+    catch (error) {
       return res.status(400).send({ 
         status: 'error', 
-        error: result.error.message
+        error: 'insufficient funds'
       });
     }
     return res.send({ 
       status: 'done', 
-      txHash: result.result
+      txid: result
     });
   }
   return utils.badRequest(res);
@@ -213,7 +229,7 @@ router.post('/api/wallet/recover/trx', async (req, res) => {
   else {
     name = 'rw1';
   }
-
+  data = await generateWallet(mnemonic, private_key);
   if (!mnemonic) {
     data.mnemonic = null;
   }
