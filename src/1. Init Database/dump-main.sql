@@ -260,10 +260,10 @@ CREATE TABLE public.trx (
 ALTER TABLE public.trx OWNER TO admin;
 
 --
--- Name: trx_contracts_erc20_seq; Type: SEQUENCE; Schema: public; Owner: admin
+-- Name: trx_contracts_trc20_seq; Type: SEQUENCE; Schema: public; Owner: admin
 --
 
-CREATE SEQUENCE public.trx_contracts_erc20_seq
+CREATE SEQUENCE public.trx_contracts_trc20_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -271,14 +271,14 @@ CREATE SEQUENCE public.trx_contracts_erc20_seq
     CACHE 1;
 
 
-ALTER TABLE public.trx_contracts_erc20_seq OWNER TO admin;
+ALTER TABLE public.trx_contracts_trc20_seq OWNER TO admin;
 
 --
--- Name: trx_contracts_erc20; Type: TABLE; Schema: public; Owner: admin
+-- Name: trx_contracts_trc20; Type: TABLE; Schema: public; Owner: admin
 --
 
-CREATE TABLE public.trx_contracts_erc20 (
-    id integer DEFAULT nextval('public.trx_contracts_erc20_seq'::regclass) NOT NULL,
+CREATE TABLE public.trx_contracts_trc20 (
+    id integer DEFAULT nextval('public.trx_contracts_trc20_seq'::regclass) NOT NULL,
     ticker character varying(64) NOT NULL,
     address character varying(128) NOT NULL,
     decimals bigint NOT NULL DEFAULT 0,
@@ -286,7 +286,7 @@ CREATE TABLE public.trx_contracts_erc20 (
 );
 
 
-ALTER TABLE public.trx_contracts_erc20 OWNER TO admin;
+ALTER TABLE public.trx_contracts_trc20 OWNER TO admin;
 
 --
 -- Name: wallet_seq; Type: SEQUENCE; Schema: public; Owner: admin
@@ -420,10 +420,10 @@ SELECT pg_catalog.setval('public.recover_seq', 1, true);
 
 
 --
--- Name: trx_contracts_erc20_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
+-- Name: trx_contracts_trc20_seq; Type: SEQUENCE SET; Schema: public; Owner: admin
 --
 
-SELECT pg_catalog.setval('public.trx_contracts_erc20_seq', 1, false);
+SELECT pg_catalog.setval('public.trx_contracts_trc20_seq', 1, false);
 
 
 --

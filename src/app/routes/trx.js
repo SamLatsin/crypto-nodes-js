@@ -322,6 +322,9 @@ router.post('/api/get/wallets/trx', async (req, res) => {
 
 // router.post('/api/test/trx', async (req, res) => {
 //   let result = await tronWeb.trx.getCurrentBlock();
+//   // result = await tronWeb.trx.getContract(contract);
+//   let instance = await tronWeb.contract.at(contract);
+//   result = await instance.decimals().call(); 
 //   return res.send({ 
 //     status: 'done',
 //     result: result

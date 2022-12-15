@@ -1,7 +1,7 @@
 const db = require('../middleware/db').getDb();
-const model = "trx_contracts_erc20";
+const model = "trx_contracts_trc20";
 
-let Trx_contract_erc20 = {
+let Trx_contract_trc20 = {
 	insert: async function(fields) {
 		let query = "INSERT INTO " + model;
 		let keys = [];
@@ -18,7 +18,7 @@ let Trx_contract_erc20 = {
 		values = values.join(", ");
 		query = query + " (" + keys + ") VALUES (" + values + ") RETURNING id";
 		query = {
-			name: "insert trx contract erc20 " + fields.name + fields.address,
+			name: "insert trx contract trc20 " + fields.name + fields.address,
 			text: query,
 			values: data
 		};
@@ -45,7 +45,7 @@ let Trx_contract_erc20 = {
 		values = values.join(", ");
 		query = query + values + " WHERE id=" + id;
 		query = {
-			name: "update trx contract erc20 " + id,
+			name: "update trx contract trc20 " + id,
 			text: query,
 			values: data
 		};
@@ -62,7 +62,7 @@ let Trx_contract_erc20 = {
 	delete: async function(id) {
 		let query = "DELETE FROM " + model + " WHERE id=$1";
 		query = {
-			name: "delete trx contract erc20 " + id,
+			name: "delete trx contract trc20 " + id,
 			text: query,
 			values: [id]
 		};
@@ -79,7 +79,7 @@ let Trx_contract_erc20 = {
 	deleteByTicker: async function(ticker) {
 		let query = "DELETE FROM " + model + " WHERE ticker=$1";
 		query = {
-			name: "delete trx contract erc20 by ticker " + ticker,
+			name: "delete trx contract trc20 by ticker " + ticker,
 			text: query,
 			values: [ticker]
 		};
@@ -130,4 +130,4 @@ let Trx_contract_erc20 = {
 		return res;
 	}
 }
-module.exports = Trx_contract_erc20;
+module.exports = Trx_contract_trc20;
