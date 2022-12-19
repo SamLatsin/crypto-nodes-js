@@ -228,16 +228,27 @@ router.post('/api/add/contract/trc20', async (req, res) => {
       error: 'ticker already exists'
     });
   }
-  const contractObj = await tronWeb.contract().at(address);
-  tronWeb.setAddress(address);
-  let decimals = await contractObj.decimals().call();
-  decimals = 10**parseInt(decimals);
-  const fields = {
-    ticker: ticker,
-    address: address,
-    decimals: decimals
-  };
-  await Trc20Contract.insert(fields);
+
+  let contractObj = null;
+  let decimals = null;
+  try {
+    contractObj = await tronWeb.contract().at(address);
+    tronWeb.setAddress(address);
+    decimals = await contractObj.decimals().call();
+    decimals = 10**parseInt(decimals);
+    const fields = {
+      ticker: ticker,
+      address: address,
+      decimals: decimals
+    };
+    await Trc20Contract.insert(fields);
+  }
+  catch (error) {
+    return res.status(400).send({ 
+      status: 'error',
+      error: error
+    });
+  }
   return res.send({ 
     status: 'done',
     fields: fields
