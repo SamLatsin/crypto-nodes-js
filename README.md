@@ -1,7 +1,7 @@
 # crypto-nodes-js
 Rewritten from php to node js crypto-nodes with docker and easy installation. Backend HTTP-JSON API for working with the most famous cryptocurrencies: Bitcoin, Ethereum and TRON.
 
-## Status - developing TRON
+## Status - updating documentation
 
 ## Overview
 Aggregator of the most famous cryptocurrencies written in [Node JS](https://nodejs.org/en/) [Express.js](http://expressjs.com/), persistant storage is [PostgreSQL](https://www.postgresql.org/). See [API documentation](https://sam-latsin.gitbook.io/crypto-rest-api-eng/).
@@ -35,16 +35,16 @@ Bitcoin special features:
 Ethereum special feature:
 * Support for ERC20 tokens (add, delete, get)
 
-<!-- Tron special feature:
-* Support for TRC20 USDT tokens -->
+Tron special feature:
+* Support for TRC20 tokens (add, delete, get)
 
 ### What needs to be done
 * Remove external API dependency for Tron and Ethereum networks
 * Add new currencies
 ### Requirements
 * Linux server
-* At least 2 TB SSD
-* At least 16 GB RAM
+* At least 4 TB SSD
+* At least 32 GB RAM
 * [etherscan.io API token](https://etherscan.io/apis)
 
 ### Installation
@@ -65,6 +65,9 @@ ETH_ENABLED = 1 # enable (1) or disable (0) eth endpoints
 ETH_TESTNET=0 # net type, 0 - mainnet, 1 - sepolia testnet
 ETH_TOKEN={YOUR_ETH_TOKEN_TO_ACCESS_FUNCTIONALITY_OF_ETH_AND_ERC20}
 ETHERSCAN_API_KEY={YOUR_GENERATED_ETHERSCAN_API_KEY}
+TRX_ENABLED = 1 # enable (1) or disable (0) trx endpoints
+TRX_TESTNET=0 # net type, 0 - mainnet, 1 - nile testnet
+TRX_TOKEN={YOUR_TRX_TOKEN_TO_ACCESS_FUNCTIONALITY_OF_TRX_AND_TRC20}
 ```
 
 Then just run `docker compose up` and you done.
