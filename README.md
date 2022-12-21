@@ -2,6 +2,7 @@
 Rewritten from php to node js crypto-nodes with docker and easy installation. Backend HTTP-JSON API for working with the most famous cryptocurrencies: Bitcoin, Ethereum and TRON.
 
 ## Status - updating documentation
+## Upcoming - TON and BNB
 
 ## Overview
 Aggregator of the most famous cryptocurrencies written in [Node JS](https://nodejs.org/en/) [Express.js](http://expressjs.com/), persistant storage is [PostgreSQL](https://www.postgresql.org/). See [API documentation](https://sam-latsin.gitbook.io/crypto-rest-api-eng/).
