@@ -1,11 +1,11 @@
 # crypto-nodes-js
 Rewritten from php to node js crypto-nodes with docker and easy installation. Backend HTTP-JSON API for working with the most famous cryptocurrencies: Bitcoin, Ethereum and TRON.
 
-## Status - updating documentation
+## Status - idle
 ## Upcoming - TON and BNB
 
 ## Overview
-Aggregator of the most famous cryptocurrencies written in [Node JS](https://nodejs.org/en/) [Express.js](http://expressjs.com/), persistant storage is [PostgreSQL](https://www.postgresql.org/). See [API documentation](https://sam-latsin.gitbook.io/crypto-rest-api-eng/).
+Aggregator of the most famous cryptocurrencies written in [Node JS](https://nodejs.org/en/) [Express.js](http://expressjs.com/), persistant storage is [PostgreSQL](https://www.postgresql.org/). See [API documentation](https://sam-latsin.gitbook.io/crypto-nodes-js-eng/).
 ### Use cases
 * Crypto P2P exchange
 * Online marketplace
@@ -73,7 +73,7 @@ TRX_TOKEN={YOUR_TRX_TOKEN_TO_ACCESS_FUNCTIONALITY_OF_TRX_AND_TRC20}
 
 Then just run `docker compose up` and you done.
 
-After all steps done you can check if API works, check [API documentation](https://sam-latsin.gitbook.io/crypto-rest-api-eng/).
+After all steps done you can check if API works, check [API documentation](https://sam-latsin.gitbook.io/crypto-nodes-js-eng/).
 
 ## License
 
