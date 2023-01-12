@@ -107,5 +107,17 @@ let BtcTransaction = {
 	    });
 		return res;
 	},
+	getByAddress: async function(address) {
+		let query = 'SELECT * FROM ' + model + ' WHERE "fromAddress"=$1 OR "toAddress"=$1';
+		const res = await db
+	    .query(query, [address])
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
 }
 module.exports = BtcTransaction;

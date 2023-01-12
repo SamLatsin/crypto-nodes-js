@@ -1172,6 +1172,32 @@ router.post('/api/get/wallets/btc', async (req, res) => {
   });
 });
 
+router.post('/api/get/address_history/btc', async (req, res) => {
+  const name = req.body.name;
+  const token = req.body.walletToken;
+  const address = req.body.address;
+  let wallet = await Wallet.getByTickerAndName('btc', name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != token) {
+      return utils.badToken(res);
+    }
+    const btc = await Btc.getByNameAndAddress(name, address);
+    if (btc.length == 0 || !btc) {
+      return res.status(400).send({ 
+        status: 'error', 
+        error: 'No address on this wallet'
+      });
+    }
+    const transactions = await BtcTransaction.getByAddress(address);
+    return res.send({ 
+      status: 'done', 
+      result: transactions
+    });
+  }
+  return utils.badRequest(res);
+});
+
 // router.post('/api/test/btc', async (req, res) => {
 //   const name = req.body.name;
 //   const result = await utils.sendRpc("-getinfo", [], "bitcoin:8332/");
