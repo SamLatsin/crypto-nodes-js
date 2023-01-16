@@ -1198,6 +1198,21 @@ router.post('/api/get/address_history/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
+router.post('/api/wallet/get_by_address/btc', async (req, res) => {
+  const address = req.body.address;
+  let wallet = await Btc.getByAddress(address);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+  }
+  else {
+    wallet = null;
+  }
+  return res.send({ 
+    status: 'done', 
+    result: wallet
+  });
+});
+
 // router.post('/api/test/btc', async (req, res) => {
 //   const name = req.body.name;
 //   const result = await utils.sendRpc("-getinfo", [], "bitcoin:8332/");
