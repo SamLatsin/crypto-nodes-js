@@ -107,6 +107,30 @@ let BtcTransaction = {
 	    });
 		return res;
 	},
+	getByNameChunk: async function(name, count, skip) {
+		let query = 'SELECT * FROM ' + model + ' WHERE "fromWallet"=$1 OR "toWallet"=$1 LIMIT $2 OFFSET $3';
+		const res = await db
+	    .query(query, [name, count, skip])
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
+	getByNameReceivedChunk: async function(name, count, skip) {
+		let query = 'SELECT * FROM ' + model + ' WHERE "toWallet"=$1 LIMIT $2 OFFSET $3';
+		const res = await db
+	    .query(query, [name, count, skip])
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
 	getByAddress: async function(address) {
 		let query = 'SELECT * FROM ' + model + ' WHERE "fromAddress"=$1 OR "toAddress"=$1';
 		const res = await db

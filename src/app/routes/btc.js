@@ -443,6 +443,8 @@ router.post('/api/walletnotify/btc', async (req, res) => {
 router.post('/api/get/history/btc', async (req, res) => {
   const name = req.body.name;
   const token = req.body.walletToken;
+  const count = req.body.count;
+  const skip = req.body.skip;
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
@@ -454,7 +456,32 @@ router.post('/api/get/history/btc', async (req, res) => {
         status: "recovering"
       });
     }
-    const transactions = await BtcTransaction.getByName(name);
+    const transactions = await BtcTransaction.getByNameChunk(name, count, skip);
+    return res.send({ 
+      status: 'done', 
+      result: transactions
+    });
+  }
+  return utils.badRequest(res);
+});
+
+router.post('/api/get/history_received/btc', async (req, res) => {
+  const name = req.body.name;
+  const token = req.body.walletToken;
+  const count = req.body.count;
+  const skip = req.body.skip;
+  let wallet = await Wallet.getByTickerAndName('btc', name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != token) {
+      return utils.badToken(res);
+    }
+    if (await isRecovering(wallet.name)) {
+      return res.send({
+        status: "recovering"
+      });
+    }
+    const transactions = await BtcTransaction.getByNameReceivedChunk(name, count, skip);
     return res.send({ 
       status: 'done', 
       result: transactions
