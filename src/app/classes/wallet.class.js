@@ -112,6 +112,18 @@ let Wallet = {
 	    });
 		return res;
 	},
+	getByTickerAndRefreshToken: async function(ticker, refreshToken) {
+		let query = 'SELECT * FROM ' + model + ' WHERE ticker=$1 AND "refreshToken"=$2';
+		const res = await db
+	    .query(query, [ticker, refreshToken])
+	    .then((payload) => {
+	      return payload.rows;
+	    })
+	    .catch(() => {
+	    	return false;
+	    });
+		return res;
+	},
 	getByTickerAndKey: async function(ticker, private_key) {
 		let query = 'SELECT * FROM ' + model + ' WHERE ticker=$1 AND "privateKey"=$2';
 		const res = await db

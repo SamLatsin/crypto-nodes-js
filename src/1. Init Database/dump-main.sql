@@ -315,7 +315,8 @@ CREATE TABLE public.wallets (
     "walletToken" character varying(128) NOT NULL,
     "lastSync" timestamp with time zone,
     date timestamp with time zone DEFAULT now(),
-    recovered integer DEFAULT 0
+    recovered integer DEFAULT 0,
+    "refreshToken" character varying(1024) DEFAULT NULL
 );
 
 

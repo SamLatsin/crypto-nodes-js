@@ -1,5 +1,7 @@
 const axios = require('axios');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const Wallet = require('../classes/wallet.class');
 
 module.exports = {
 	checkToken: function(req) {
@@ -117,5 +119,67 @@ module.exports = {
 	    var s = num+"";
 	    while (s.length < size) s = "0" + s;
 	    return s;
+	},
+	jwtAuthenticate: async function(name, walletToken, ticker, res) {
+		let wallet = await Wallet.getByTickerAndName(ticker, name);
+		if (wallet && wallet.length !== 0) {
+		    wallet = wallet[0];
+		    if (wallet.walletToken != walletToken) {
+		    	return this.badToken(res);
+		    }
+		    const payload = {
+		     	name: name,
+		    };
+		    let expiresIn = 60 * 60; // accessToken 1 hour
+		    const accessToken = jwt.sign(payload, process.env.JWT_ACCESS_PRIVATE_KEY, { expiresIn });
+		    expiresIn = 60 * 60 * 24 * 7; // refreshToken 7 days
+		    const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_PRIVATE_KEY, { expiresIn });
+		    const fields = {
+		      	refreshToken: refreshToken
+		    };
+		    await Wallet.update(fields, wallet.id);
+		    return res.send({ 
+				status: 'done', 
+				result: {
+					access: accessToken,
+					refresh: refreshToken
+				}
+		    });
+		}  
+		return this.badToken(res);
+	},
+	jwtRefresh: async function(token, ticker, res) {
+		jwt.verify(token, process.env.JWT_REFRESH_PRIVATE_KEY, async (error, decoded) => {
+		    if (error) {
+		    	return res.status(400).send({
+					status: "error",
+				 	error: error
+				});
+		    }
+		    const name = decoded.name;
+		    let wallet = await Wallet.getByTickerAndRefreshToken(ticker, token);
+			if (wallet && wallet.length !== 0) {
+			    wallet = wallet[0];
+			    const payload = {
+			     	name: name,
+			    };
+			    let expiresIn = 60 * 60; // accessToken 1 hour
+			    const accessToken = jwt.sign(payload, process.env.JWT_ACCESS_PRIVATE_KEY, { expiresIn });
+			    expiresIn = 60 * 60 * 24 * 7; // refreshToken 7 days
+			    const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_PRIVATE_KEY, { expiresIn });
+			    const fields = {
+			      	refreshToken: refreshToken
+			    };
+			    await Wallet.update(fields, wallet.id);
+			    return res.send({ 
+					status: 'done', 
+					result: {
+						access: accessToken,
+						refresh: refreshToken
+					}
+			    });
+			}
+			return this.badToken(res);
+	  });
 	}
 };

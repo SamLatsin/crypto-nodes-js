@@ -104,6 +104,10 @@ dist
 .tern-port
 
 node_modules
+pgadmin
+pgdata
+bitcoin-data
+package-lock.json
 .DS_Store
 
 sftp-config.json

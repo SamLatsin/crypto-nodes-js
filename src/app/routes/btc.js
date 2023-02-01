@@ -119,6 +119,17 @@ async function updateBalance(name) {
   return true;
 }
 
+router.post('/api/wallet/authenticate/btc', async (req, res) => {
+  const name = req.body.name;
+  const walletToken = req.body.walletToken;
+  return await utils.jwtAuthenticate(name, walletToken, "btc", res);
+});
+
+router.post('/api/wallet/authenticate/refresh/btc', async (req, res) => {
+  const token = req.body.refreshToken;
+  return await utils.jwtRefresh(token, "btc", res);
+});
+
 router.post('/api/get/status/btc', async (req, res) => {
   let result = await utils.sendRpc("getblockchaininfo", [], "bitcoin:8332/");
   if (result) {
