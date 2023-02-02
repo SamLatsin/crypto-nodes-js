@@ -130,6 +130,36 @@ router.post('/api/wallet/authenticate/refresh/btc', async (req, res) => {
   return await utils.jwtRefresh(token, "btc", res);
 });
 
+router.post('/api/wallet/change_token/btc', utils.checkJwtToken, async (req, res) => {
+  const oldToken = req.body.oldWalletToken;
+  const newToken = req.body.newWalletToken;
+  const walletJwt = req.walletJwt;
+  let wallet = await Wallet.getByTickerAndName('btc', walletJwt.name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != oldToken) {
+      return utils.badRequest(res);
+    }
+    fields = {
+      walletToken: newToken
+    };
+    await Wallet.update(fields, wallet.id);
+    return res.send({ 
+      status: 'done', 
+      result: newToken
+    });
+  }
+  return utils.badRequest(res);
+});
+
+// router.post('/api/test/btc', utils.checkJwtToken, async (req, res) => {
+//   const test = req.walletJwt;
+//   return res.send({ 
+//     status: 'done',
+//     test: test
+//   });
+// });
+
 router.post('/api/get/status/btc', async (req, res) => {
   let result = await utils.sendRpc("getblockchaininfo", [], "bitcoin:8332/");
   if (result) {
@@ -178,15 +208,11 @@ router.post('/api/create/wallet/btc', async (req, res) => {
   });
 });
 
-router.post('/api/get/balance/btc', async (req, res) => {
+router.post('/api/get/balance/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     if (await isRecovering(wallet.name)) {
       return res.send({
         status: "recovering"
@@ -210,15 +236,11 @@ router.post('/api/get/balance/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/create/address/btc', async (req, res) => {
+router.post('/api/create/address/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     if (await isRecovering(wallet.name)) {
       return res.send({
         status: "recovering"
@@ -243,15 +265,11 @@ router.post('/api/create/address/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/wallet/get_addresses/btc', async (req, res) => {
+router.post('/api/wallet/get_addresses/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     if (await isRecovering(wallet.name)) {
       return res.send({
         status: "recovering"
@@ -270,16 +288,12 @@ router.post('/api/wallet/get_addresses/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/get/address_balance/btc', async (req, res) => {
+router.post('/api/get/address_balance/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   const address = req.body.address;
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     if (await isRecovering(wallet.name)) {
       return res.send({
         status: "recovering"
@@ -451,17 +465,13 @@ router.post('/api/walletnotify/btc', async (req, res) => {
   });
 });
 
-router.post('/api/get/history/btc', async (req, res) => {
+router.post('/api/get/history/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   const count = req.body.count;
   const skip = req.body.skip;
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     if (await isRecovering(wallet.name)) {
       return res.send({
         status: "recovering"
@@ -476,17 +486,13 @@ router.post('/api/get/history/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/get/history_received/btc', async (req, res) => {
+router.post('/api/get/history_received/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   const count = req.body.count;
   const skip = req.body.skip;
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     if (await isRecovering(wallet.name)) {
       return res.send({
         status: "recovering"
@@ -501,9 +507,8 @@ router.post('/api/get/history_received/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/get/fee/btc', async (req, res) => {
+router.post('/api/get/fee/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   const from_address = req.body.from_address;
   const to_address = req.body.to_address;
   let fee = req.body.fee;
@@ -511,9 +516,6 @@ router.post('/api/get/fee/btc', async (req, res) => {
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     if (await isRecovering(wallet.name)) {
       return res.send({
         status: "recovering"
@@ -573,9 +575,8 @@ router.post('/api/get/fee/btc', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/send/btc', async (req, res) => {
+router.post('/api/send/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   const from_address = req.body.from_address;
   const to_address = req.body.to_address;
   let fee = req.body.fee;
@@ -583,9 +584,6 @@ router.post('/api/send/btc', async (req, res) => {
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     if (await isRecovering(wallet.name)) {
       return res.send({
         status: "recovering"
@@ -782,15 +780,11 @@ router.post('/api/wallet/recover/btc', async (req, res) => {
   });
 });
 
-router.post('/api/wallet/recover/status/btc', async (req, res) => {
+router.post('/api/wallet/recover/status/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
     let result = await utils.sendRpc("getwalletinfo", [], "bitcoin:8332/wallet/" + wallet.name);
     if (result.error !== null) {
@@ -1012,8 +1006,7 @@ router.post('/api/get/file_recovered/stats/btc', async (req, res) => {
 });
 
 // https://stackoverflow.com/questions/38493893/heres-how-to-send-raw-transaction-btc-using-bitcoin-cli-command
-router.post('/api/send_raw/btc', async (req, res) => { 
-  const token = req.body.walletToken;
+router.post('/api/send_raw/btc', utils.checkJwtToken, async (req, res) => { 
   const name = req.body.name;
   let inputs_raw = req.body.inputs;
   let outputs_raw = req.body.outputs;
@@ -1024,9 +1017,6 @@ router.post('/api/send_raw/btc', async (req, res) => {
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     if (await isRecovering(wallet.name)) {
       return res.send({
         status: "recovering"
@@ -1210,16 +1200,12 @@ router.post('/api/get/wallets/btc', async (req, res) => {
   });
 });
 
-router.post('/api/get/address_history/btc', async (req, res) => {
+router.post('/api/get/address_history/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   const address = req.body.address;
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     const btc = await Btc.getByNameAndAddress(name, address);
     if (btc.length == 0 || !btc) {
       return res.status(400).send({ 
@@ -1250,15 +1236,5 @@ router.post('/api/wallet/get_by_address/btc', async (req, res) => {
     result: wallet
   });
 });
-
-// router.post('/api/test/btc', async (req, res) => {
-//   const name = req.body.name;
-//   const result = await utils.sendRpc("-getinfo", [], "bitcoin:8332/");
-//   // await forwardBalance(name);
-//   return res.send({ 
-//     status: 'done',
-//     result: result
-//   });
-// });
 
 module.exports = router;

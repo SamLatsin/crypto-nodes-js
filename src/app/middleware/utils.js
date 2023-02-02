@@ -181,5 +181,16 @@ module.exports = {
 			}
 			return this.badToken(res);
 	  });
+	},
+	checkJwtToken: function (req, res, next) {
+	  	const token = req.header("Authorization");
+	  	if (!token) return res.status(401).send({status: "error", error: "Access denied. No token provided"});
+		try {
+		    const decoded = jwt.verify(token, process.env.JWT_ACCESS_PRIVATE_KEY);
+		    req.walletJwt = decoded;
+		    next();
+		  } catch (ex) {
+		    return res.status(400).send({status: "error", error: "Invalid token"});
+		}
 	}
 };

@@ -84,6 +84,39 @@ function generateWallet(mnemonic = null, private_key = null) {
   return res;
 }
 
+router.post('/api/wallet/authenticate/eth', async (req, res) => {
+  const name = req.body.name;
+  const walletToken = req.body.walletToken;
+  return await utils.jwtAuthenticate(name, walletToken, "eth", res);
+});
+
+router.post('/api/wallet/authenticate/refresh/eth', async (req, res) => {
+  const token = req.body.refreshToken;
+  return await utils.jwtRefresh(token, "eth", res);
+});
+
+router.post('/api/wallet/change_token/eth', utils.checkJwtToken, async (req, res) => {
+  const oldToken = req.body.oldWalletToken;
+  const newToken = req.body.newWalletToken;
+  const walletJwt = req.walletJwt;
+  let wallet = await Wallet.getByTickerAndName('eth', walletJwt.name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != oldToken) {
+      return utils.badRequest(res);
+    }
+    fields = {
+      walletToken: newToken
+    };
+    await Wallet.update(fields, wallet.id);
+    return res.send({ 
+      status: 'done', 
+      result: newToken
+    });
+  }
+  return utils.badRequest(res);
+});
+
 router.post('/api/get/status/eth', async (req, res) => {
   let result = await utils.sendRpcEth("eth_syncing", [], service);
   if ("result" in result) {
@@ -130,15 +163,11 @@ router.post('/api/create/wallet/eth', async (req, res) => {
   });
 });
 
-router.post('/api/get/address/eth', async (req, res) => {
+router.post('/api/get/address/eth', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   let wallet = await Wallet.getByTickerAndName('eth', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     const address = await Eth.getByName(wallet.name);
     return res.send({ 
       status: 'done', 
@@ -148,15 +177,11 @@ router.post('/api/get/address/eth', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/get/balance/eth', async (req, res) => {
+router.post('/api/get/balance/eth', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   let wallet = await Wallet.getByTickerAndName('eth', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     let address = await Eth.getByName(wallet.name);
     address = address[0].address;
     let args = [address, "latest"];
@@ -180,17 +205,13 @@ router.post('/api/get/balance/eth', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/get/fee/eth', async (req, res) => {
+router.post('/api/get/fee/eth', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   const amount = req.body.amount;
   const to_address = req.body.address;
   let wallet = await Wallet.getByTickerAndName('eth', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     const gas_price = await utils.sendRpcEth("eth_gasPrice", [], service);
     const fee = parseFloat(Number(gas_price.result)) / 1e18 * 21000;
     return res.send({ 
@@ -201,18 +222,14 @@ router.post('/api/get/fee/eth', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/send/eth', async (req, res) => {
+router.post('/api/send/eth', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   const amount = req.body.amount;
   const to_address = req.body.address;
   const memo = req.body.memo;
   let wallet = await Wallet.getByTickerAndName('eth', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     let from_address = await Eth.getByName(wallet.name);
     from_address = from_address[0].address;
     let result = await createTx(from_address, to_address, amount, wallet.privateKey, memo);
@@ -268,15 +285,11 @@ router.post('/api/wallet/recover/eth', async (req, res) => {
   });
 });
 
-router.post('/api/get/history/eth', async (req, res) => {
+router.post('/api/get/history/eth', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   let wallet = await Wallet.getByTickerAndName('eth', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     let address = await Eth.getByName(wallet.name);
     address = address[0].address;
     const headers = {

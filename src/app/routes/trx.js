@@ -67,6 +67,39 @@ router.post('/api/get/status/trx', async (req, res) => {
   });
 });
 
+router.post('/api/wallet/authenticate/trx', async (req, res) => {
+  const name = req.body.name;
+  const walletToken = req.body.walletToken;
+  return await utils.jwtAuthenticate(name, walletToken, "trx", res);
+});
+
+router.post('/api/wallet/authenticate/refresh/trx', async (req, res) => {
+  const token = req.body.refreshToken;
+  return await utils.jwtRefresh(token, "trx", res);
+});
+
+router.post('/api/wallet/change_token/trx', utils.checkJwtToken, async (req, res) => {
+  const oldToken = req.body.oldWalletToken;
+  const newToken = req.body.newWalletToken;
+  const walletJwt = req.walletJwt;
+  let wallet = await Wallet.getByTickerAndName('trx', walletJwt.name);
+  if (wallet && wallet.length !== 0) {
+    wallet = wallet[0];
+    if (wallet.walletToken != oldToken) {
+      return utils.badRequest(res);
+    }
+    fields = {
+      walletToken: newToken
+    };
+    await Wallet.update(fields, wallet.id);
+    return res.send({ 
+      status: 'done', 
+      result: newToken
+    });
+  }
+  return utils.badRequest(res);
+});
+
 router.post('/api/create/wallet/trx', async (req, res) => {
   const wallet = await Wallet.getLastByTicker("trx");
   if (wallet && wallet.length !== 0) {
@@ -99,15 +132,11 @@ router.post('/api/create/wallet/trx', async (req, res) => {
   });
 });
 
-router.post('/api/get/address/trx', async (req, res) => {
+router.post('/api/get/address/trx', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   let wallet = await Wallet.getByTickerAndName('trx', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     const address = await Trx.getByName(wallet.name);
     return res.send({ 
       status: 'done', 
@@ -117,15 +146,11 @@ router.post('/api/get/address/trx', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/get/balance/trx', async (req, res) => {
+router.post('/api/get/balance/trx', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   let wallet = await Wallet.getByTickerAndName('trx', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     let address = await Trx.getByName(wallet.name);
     address = address[0].address;
     let balance = await tronWeb.trx.getBalance(address);
@@ -152,18 +177,14 @@ router.post('/api/get/balance/trx', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/get/fee/trx', async (req, res) => {
+router.post('/api/get/fee/trx', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   const amount = req.body.amount;
   const to_address = req.body.address;
   const memo = req.body.memo;
   let wallet = await Wallet.getByTickerAndName('trx', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     let from_address = await Trx.getByName(wallet.name);
     from_address = from_address[0].address;
     let tx_bandwidth = 0;
@@ -195,18 +216,14 @@ router.post('/api/get/fee/trx', async (req, res) => {
   return utils.badRequest(res);
 });
 
-router.post('/api/send/trx', async (req, res) => {
+router.post('/api/send/trx', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   const amount = req.body.amount;
   const to_address = req.body.address;
   const memo = req.body.memo;
   let wallet = await Wallet.getByTickerAndName('trx', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     let from_address = await Trx.getByName(wallet.name);
     from_address = from_address[0].address;
     let result = null;
@@ -264,15 +281,11 @@ router.post('/api/wallet/recover/trx', async (req, res) => {
   });
 });
 
-router.post('/api/get/history/trx', async (req, res) => {
+router.post('/api/get/history/trx', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const token = req.body.walletToken;
   let wallet = await Wallet.getByTickerAndName('trx', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
-    if (wallet.walletToken != token) {
-      return utils.badToken(res);
-    }
     let address = await Trx.getByName(wallet.name);
     address = address[0].address;
     const tronGrid = new TronGrid(tronWeb);
@@ -321,7 +334,6 @@ router.post('/api/get/wallets/trx', async (req, res) => {
 });
 
 // router.post('/api/test/trx', async (req, res) => {
-  
 //   let result = await TronWeb.address.fromHex("41ea51342dabbb928ae1e576bd39eff8aaf070a8c6");
 //   // let result = await tronWeb.trx.getCurrentBlock();
 //   // // result = await tronWeb.trx.getContract(contract);

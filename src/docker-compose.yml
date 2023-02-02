@@ -123,8 +123,8 @@ services:
       - ./app/:/usr/src/app
       - /usr/src/app/node_modules
       - ./bitcoin-data:/root/bitcoin-data
-    depends_on:
-      - bitcoin
+    # depends_on:
+    #   - bitcoin
     env_file:
       - .env
 

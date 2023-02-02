@@ -108,6 +108,7 @@ pgadmin
 pgdata
 bitcoin-data
 package-lock.json
+backup
 .DS_Store
 
 sftp-config.json
