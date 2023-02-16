@@ -63,7 +63,7 @@ async function recoverAddressesBTC(name) {
             let field = {
               name: wallet.name,
               address: address[0],
-              balance: address[1]
+              // balance: address[1]
             };
             let from_db = await Btc.getByNameAndAddress(wallet.name, address[0]);
             if (from_db.length == 0) {

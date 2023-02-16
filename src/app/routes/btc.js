@@ -152,11 +152,14 @@ router.post('/api/wallet/change_token/btc', utils.checkJwtToken, async (req, res
   return utils.badRequest(res);
 });
 
-// router.post('/api/test/btc', utils.checkJwtToken, async (req, res) => {
-//   const test = req.walletJwt;
+// router.post('/api/test/btc', async (req, res) => {
+//   let wallet = await Wallet.getByTickerAndName('btc', "w85");
+//   wallet = wallet[0];
+//   const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
+//   const addresses_raw = await utils.sendRpc("listaddressgroupings", [], "bitcoin:8332/wallet/" + wallet.name);
 //   return res.send({ 
 //     status: 'done',
-//     test: test
+//     test: addresses_raw
 //   });
 // });
 
@@ -290,7 +293,7 @@ router.post('/api/wallet/get_addresses/btc', utils.checkJwtToken, async (req, re
 
 router.post('/api/get/address_balance/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const address = req.body.address;
+  const req_address = req.body.address;
   let wallet = await Wallet.getByTickerAndName('btc', name);
   if (wallet && wallet.length !== 0) {
     wallet = wallet[0];
@@ -299,21 +302,26 @@ router.post('/api/get/address_balance/btc', utils.checkJwtToken, async (req, res
         status: "recovering"
       });
     }
-    await updateBalance(name);
-    const balance = await Btc.getByNameAndAddress(name, address);
-    if (balance && balance.length !== 0) {
-      return res.send({ 
-        status: 'done', 
-        result: {
-          balance: balance[0].balance,
-          unconfirmed: balance[0].unconfirmed
+    const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
+    const addresses_raw = await utils.sendRpc("listaddressgroupings", [], "bitcoin:8332/wallet/" + wallet.name);
+    for (const [key, address_list] of Object.entries(addresses_raw)) {
+      if (address_list != null) {
+        if (address_list[0] != null) {
+          for (const [key1, address] of Object.entries(address_list[0])) {
+            if (address.length >= 2) {
+              if (req_address == address[0]) {
+                return res.send({ 
+                  status: 'done', 
+                  result: {
+                    balance: address[1],
+                  }
+                });
+              }
+            }
+          }
         }
-      });
+      }
     }
-    return res.status(400).send({ 
-      status: 'error', 
-      error: 'No address on this wallet'
-    });
   }
   return utils.badRequest(res);
 });
@@ -509,7 +517,6 @@ router.post('/api/get/history_received/btc', utils.checkJwtToken, async (req, re
 
 router.post('/api/get/fee/btc', utils.checkJwtToken, async (req, res) => {
   const name = req.body.name;
-  const from_address = req.body.from_address;
   const to_address = req.body.to_address;
   let fee = req.body.fee;
   let amount = req.body.amount;
@@ -520,28 +527,6 @@ router.post('/api/get/fee/btc', utils.checkJwtToken, async (req, res) => {
       return res.send({
         status: "recovering"
       });
-    }
-    const from_virtual = await Btc.getByNameAndAddress(name, from_address);
-    if (!from_virtual || from_virtual.length == 0) {
-      return res.status(400).send({ 
-        status: 'error', 
-        result: 'Non-existent address on this wallet'
-      });
-    }
-    const to_virtual = await Btc.getByNameAndAddress(name, to_address);
-    if (to_virtual && to_virtual.length > 0) {
-      if (from_virtual[0].name == to_virtual[0].name) {
-        if (parseFloat(from_virtual[0].balance) >= parseFloat(amount)) {
-          return res.send({ 
-            status: 'done', 
-            result: 0
-          });
-        }
-        return res.status(400).send({ 
-          status: 'error', 
-          result: 'Insufficient funds'
-        });
-      }
     }
     const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
     amount = parseFloat(amount).toFixed(8);
@@ -597,31 +582,6 @@ router.post('/api/send/btc', utils.checkJwtToken, async (req, res) => {
       });
     }
     const to_virtual = await Btc.getByNameAndAddress(name, to_address);
-    if (to_virtual && to_virtual.length > 0) {
-      if (from_virtual[0].name == to_virtual[0].name) {
-        if (parseFloat(from_virtual[0].balance) >= parseFloat(amount)) {
-          const fields = {
-            fromWallet: name,
-            toWallet: name,
-            fromAddress: from_virtual[0].address,
-            toAddress: to_address[0].address,
-            amount: amount,
-            fee: 0,
-            checks: 2,
-          };
-          await BtcTransaction.insert(fields);
-          await updateBalance(name);
-          return res.send({ 
-            status: 'done', 
-            result: null
-          });
-        }
-        return res.status(400).send({ 
-          status: 'error', 
-          result: 'Insufficient virtual funds'
-        });
-      }
-    }
     amount = parseFloat(amount).toFixed(8);
     if (fee && fee.length > 0) {
       args = {
@@ -636,12 +596,6 @@ router.post('/api/send/btc', utils.checkJwtToken, async (req, res) => {
         amount: amount,
         conf_target: 3
       };
-    }
-    if (parseFloat(from_virtual[0].balance) < parseFloat(amount)) {
-      return res.status(400).send({ 
-        status: 'error', 
-        result: 'Insufficient virtual funds'
-      });
     }
     const load = await utils.sendRpc("loadwallet", [wallet.name], "bitcoin:8332/");
     const result = await utils.sendRpc("sendtoaddress", args, "bitcoin:8332/wallet/" + name);
